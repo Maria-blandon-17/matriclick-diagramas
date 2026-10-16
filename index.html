@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matri-Click 3D • Diagrama Interactivo de Base de Datos</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+    <!-- CONTENEDOR THREE.JS WEBGL -->
+    <div id="canvas-container"></div>
+
+    <!-- BARRA DE PESTAÑAS DEL PROYECTO (MULTI-DIAGRAMAS) -->
+    <div class="project-tabs-container">
+        <button class="project-tab-btn active" data-workspace-idx="0" title="Pestaña 1: Base de Datos">
+            <span class="tab-badge-dot">●</span>
+            <span>Base de Datos</span>
+            <span class="tab-tag">Físico</span>
+        </button>
+        <button class="project-tab-btn" data-workspace-idx="1" title="Pestaña 2: Modelo Entidad Relación">
+            <span class="tab-badge-dot" style="color: #ba68c8;">●</span>
+            <span>Modelo Entidad Relación</span>
+            <span class="tab-tag" style="background: rgba(123, 31, 162, 0.18); color: #ba68c8;">ERD</span>
+        </button>
+        <button class="project-tab-btn" data-workspace-idx="2" title="Pestaña 3: Clases de Uso">
+            <span class="tab-badge-dot" style="color: #4db6ac;">●</span>
+            <span>Clases de Uso</span>
+            <span class="tab-tag" style="background: rgba(0, 137, 123, 0.18); color: #4db6ac;">Clases</span>
+        </button>
+        <button class="project-tab-btn" data-workspace-idx="3" title="Pestaña 4: Casos de Uso">
+            <span class="tab-badge-dot" style="color: #64b5f6;">●</span>
+            <span>Casos de Uso</span>
+            <span class="tab-tag" style="background: rgba(25, 118, 210, 0.18); color: #64b5f6;">UML CU</span>
+        </button>
+        <div class="tab-banner-hint" id="tab-banner-hint">
+            <span>✨ Arrastra cualquier tabla por el espacio 3D; las líneas se conectan a sus lados y la siguen en vivo</span>
+        </div>
+    </div>
+
+    <!-- BARRA SUPERIOR DE CONTROL -->
+    <header class="top-nav">
+        <div class="brand-section">
+            <div class="brand-icon">⚡</div>
+            <div>
+                <div class="brand-title">
+                    MATRI-CLICK <span class="brand-badge" id="active-diagram-badge">DIAGRAMA 1</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SELECTORES DE MODO Y LAYOUT -->
+        <div class="center-controls" id="center-controls-panel">
+            <!-- Modos correspondientes a las 3 imágenes -->
+            <div class="pill-group" id="diagram-modes-group" title="Selecciona la representación del diagrama">
+                <button class="pill-btn active" data-mode="physical" title="Diagrama 1: Tablas con colores, tipos PostgreSQL, PK y FK">
+                    🎨 Esquema Relacional
+                </button>
+                <button class="pill-btn erd-mode" data-mode="erd" title="Diagrama 2: Modelo Entidad-Relación con verbos de relación">
+                    🏷️ Entidad-Relación (ERD)
+                </button>
+                <button class="pill-btn uml-mode" data-mode="uml" title="Diagrama 3: Diagrama de clases UML con multiplicidades">
+                    📐 Clases UML
+                </button>
+            </div>
+
+            <!-- Distribuciones 3D -->
+            <div class="pill-group" title="Cambia la distribución espacial 3D">
+                <button class="pill-btn active" data-layout="original" title="Distribución idéntica a tus fotos">
+                    🖼️ Original
+                </button>
+                <button class="pill-btn" data-layout="layered" title="Capas de profundidad en el eje Z">
+                    🧬 Multicapa 3D
+                </button>
+                <button class="pill-btn" data-layout="orbital" title="Distribución en anillo cilíndrico holográfico">
+                    🪐 Orbital
+                </button>
+            </div>
+        </div>
+
+        <!-- BUSCADOR Y ACCIONES -->
+        <div class="right-actions">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="table-search" placeholder="Buscar tabla o campo..." autocomplete="off">
+            </div>
+
+            <button class="action-btn" id="btn-open-photos" title="Ver las imágenes que subiste de referencia">
+                🖼️ Fotos
+            </button>
+            <button class="action-btn" id="btn-open-sql" title="Ver el script SQL DDL para PostgreSQL / Supabase">
+                📜 Código SQL
+            </button>
+            <button class="action-btn primary" id="btn-screenshot" title="Descargar captura 3D en alta definición">
+                📷 Captura HD
+            </button>
+        </div>
+    </header>
+
+    <!-- GUÍA DE RATÓN Y GESTOS (ABAJO A LA IZQUIERDA) -->
+    <div class="mouse-guide">
+        <div class="guide-item">
+            <span class="icon">✋</span>
+            <span><strong>Clic en Tabla + Arrastrar:</strong> Mover tabla donde quieras (líneas la siguen)</span>
+        </div>
+        <div class="guide-item">
+            <span class="icon">🔄</span>
+            <span><strong>Clic en Fondo + Arrastrar:</strong> Girar 360° en 3D</span>
+        </div>
+        <div class="guide-item">
+            <span class="icon">↔️</span>
+            <span><strong>Clic Derecho + Arrastrar:</strong> Mover a los lados (Pan)</span>
+        </div>
+        <div class="guide-item">
+            <span class="icon">🔍</span>
+            <span><strong>Rueda del Ratón:</strong> Acercar y alejar (Zoom)</span>
+        </div>
+        <div class="guide-item">
+            <span class="icon">👆</span>
+            <span><strong>Clic Simple:</strong> Inspeccionar detalles de la tabla</span>
+        </div>
+    </div>
+
+    <!-- HUD FLOTANTE DE CONTROL 3D (ABAJO CENTRADO) -->
+    <div class="controls-hud">
+        <button class="hud-btn" id="btn-pan-left" title="Mover hacia la izquierda (Pan)">⬅️</button>
+        <button class="hud-btn" id="btn-pan-right" title="Mover hacia la derecha (Pan)">➡️</button>
+        <button class="hud-btn" id="btn-pan-up" title="Mover hacia arriba">⬆️</button>
+        <button class="hud-btn" id="btn-pan-down" title="Mover hacia abajo">⬇️</button>
+
+        <div class="hud-divider"></div>
+
+        <button class="hud-btn" id="btn-rotate-auto" title="Activar/Pausar giro automático continuo en 3D">🔄</button>
+        <button class="hud-btn" id="btn-view-isometric" title="Vista isométrica 3D">🧊</button>
+        <button class="hud-btn" id="btn-view-2d" title="Vista frontal 2D">📐</button>
+        <button class="hud-btn" id="btn-view-top" title="Vista aérea superior">🛸</button>
+
+        <div class="hud-divider"></div>
+
+        <button class="hud-btn" id="btn-zoom-in" title="Acercar (Zoom +)">➕</button>
+        <button class="hud-btn" id="btn-zoom-out" title="Alejar (Zoom -)">➖</button>
+        <button class="hud-btn" id="btn-reset-cam" title="Restablecer posición inicial de la cámara">🎯</button>
+    </div>
+
+    <!-- PANEL LATERAL: DETALLES DE TABLA (INSPECTOR) -->
+    <aside class="sidebar-panel" id="sidebar-panel">
+        <div class="sidebar-header">
+            <div class="sidebar-title-area">
+                <div class="table-color-dot" id="table-color-dot"></div>
+                <div>
+                    <div class="sidebar-table-name" id="sidebar-table-name">colegio.matriculas</div>
+                    <div class="sidebar-schema-tag" id="sidebar-schema-tag">Esquema: COLEGIO</div>
+                </div>
+            </div>
+            <button class="sidebar-close-btn" id="sidebar-close-btn">✕</button>
+        </div>
+
+        <div class="sidebar-content">
+            <div>
+                <div class="section-label">Descripción</div>
+                <p id="table-description-text" style="font-size: 12px; color: #b0c4de; line-height: 1.5;"></p>
+            </div>
+
+            <div>
+                <div class="section-label">Columnas y Tipos de Datos</div>
+                <div class="columns-list" id="sidebar-columns-list"></div>
+            </div>
+
+            <div>
+                <div class="section-label">Relaciones Vinculadas (FKs)</div>
+                <div class="relations-list" id="sidebar-relations-list"></div>
+            </div>
+
+            <div id="live-records-container" style="display: none; margin-top: 10px;">
+                <div class="section-label" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>⚡ Registros en Vivo (Base de Datos)</span>
+                    <span id="live-records-count" style="color: var(--accent-green); font-size: 10px; font-weight: bold;"></span>
+                </div>
+                <div id="sidebar-live-records" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MODAL: FOTOS DE REFERENCIA ORIGINALES -->
+    <div class="modal-overlay" id="modal-photos">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span>🖼️</span> Tus Diagramas Originales de Referencia
+                </div>
+                <button class="sidebar-close-btn" id="close-modal-photos">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="gallery-tabs">
+                    <button class="gallery-tab-btn active" data-src="./assets/diagrama_relacional_fisico.png">
+                        1. Esquema Relacional Físico (Colores)
+                    </button>
+                    <button class="gallery-tab-btn" data-src="./assets/diagrama_entidad_relacion.png">
+                        2. Entidad-Relación (ERD)
+                    </button>
+                    <button class="gallery-tab-btn" data-src="./assets/diagrama_clases_uml.png">
+                        3. Diagrama de Clases UML
+                    </button>
+                    <button class="gallery-tab-btn" data-src="./assets/diagrama_casos_de_uso.png">
+                        4. Casos de Uso (Sistema Matriclick)
+                    </button>
+                </div>
+                <div class="gallery-image-container">
+                    <img id="gallery-active-img" src="./assets/diagrama_relacional_fisico.png" alt="Diagrama de referencia">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CÓDIGO SQL COMPLETO -->
+    <div class="modal-overlay" id="modal-sql">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span>📜</span> Script DDL de Base de Datos (PostgreSQL / Supabase)
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="action-btn" id="btn-copy-sql">📋 Copiar SQL</button>
+                    <button class="sidebar-close-btn" id="close-modal-sql">✕</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <pre class="code-pre" id="sql-code-block">-- =============================================================================
+-- SISTEMA MATRI-CLICK: BASE DE DATOS INSTITUCIONAL (ESQUEMAS: auth y colegio)
+-- =============================================================================
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE SCHEMA IF NOT EXISTS auth;
+CREATE SCHEMA IF NOT EXISTS colegio;
+
+-- TABLA: auth.users
+CREATE TABLE auth.users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    email_verified_at TIMESTAMP WITH TIME ZONE NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- TABLA: colegio.sedes
+CREATE TABLE colegio.sedes (
+    id_sede SERIAL PRIMARY KEY,
+    nombre_sede VARCHAR(100) NOT NULL,
+    direccion VARCHAR(150) NOT NULL,
+    telefono VARCHAR(20),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- TABLA: colegio.grados
+CREATE TABLE colegio.grados (
+    id_grado SERIAL PRIMARY KEY,
+    nombre_grado VARCHAR(50) NOT NULL,
+    nivel_educativo VARCHAR(50) NOT NULL
+);
+
+-- TABLA: colegio.periodos_academicos
+CREATE TABLE colegio.periodos_academicos (
+    id_periodo SERIAL PRIMARY KEY,
+    nombre_periodo VARCHAR(50) NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    estado VARCHAR(20) DEFAULT 'Activo'
+);
+
+-- TABLA: colegio.profesores
+CREATE TABLE colegio.profesores (
+    id_profesor SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    documento VARCHAR(20) NOT NULL UNIQUE,
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    telefono VARCHAR(20),
+    correo_electronico VARCHAR(100) NOT NULL,
+    estado_profesor VARCHAR(20) DEFAULT 'Activo'
+);
+
+-- TABLA: colegio.acudientes
+CREATE TABLE colegio.acudientes (
+    id_acudiente SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    tipo_documento VARCHAR(20) NOT NULL,
+    documento VARCHAR(20) NOT NULL UNIQUE,
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    correo_electronico VARCHAR(100),
+    direccion VARCHAR(150),
+    parentesco VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- TABLA: colegio.grupos
+CREATE TABLE colegio.grupos (
+    id_grupo SERIAL PRIMARY KEY,
+    id_grado INT NOT NULL REFERENCES colegio.grados(id_grado),
+    id_sede INT NOT NULL REFERENCES colegio.sedes(id_sede),
+    nombre_grupo VARCHAR(50) NOT NULL,
+    cupo_maximo INT NOT NULL DEFAULT 35,
+    id_director_grupo INT REFERENCES colegio.profesores(id_profesor)
+);
+
+-- TABLA: colegio.estudiantes
+CREATE TABLE colegio.estudiantes (
+    id_estudiante SERIAL PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    tipo_documento VARCHAR(20) NOT NULL,
+    documento VARCHAR(20) NOT NULL UNIQUE,
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    fecha_nacimiento DATE NOT NULL,
+    genero VARCHAR(10) NOT NULL,
+    id_acudiente INT NOT NULL REFERENCES colegio.acudientes(id_acudiente),
+    fecha_registro TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    estado_estudiante VARCHAR(20) DEFAULT 'Activo'
+);
+
+-- TABLA: colegio.matriculas
+CREATE TABLE colegio.matriculas (
+    id_matricula SERIAL PRIMARY KEY,
+    codigo_matricula VARCHAR(50) NOT NULL UNIQUE,
+    id_estudiante INT NOT NULL REFERENCES colegio.estudiantes(id_estudiante) ON DELETE CASCADE,
+    id_periodo INT NOT NULL REFERENCES colegio.periodos_academicos(id_periodo),
+    id_grupo INT NOT NULL REFERENCES colegio.grupos(id_grupo),
+    fecha_matricula DATE NOT NULL DEFAULT CURRENT_DATE,
+    estado_matricula VARCHAR(20) DEFAULT 'Matriculado',
+    observaciones TEXT
+);
+
+-- TABLA: colegio.perfiles
+CREATE TABLE colegio.perfiles (
+    id SERIAL PRIMARY KEY,
+    rol VARCHAR(50) NOT NULL,
+    nombre_completo VARCHAR(200) NOT NULL,
+    id_profesor INT REFERENCES colegio.profesores(id_profesor),
+    id_acudiente INT REFERENCES colegio.acudientes(id_acudiente),
+    id_estudiante INT REFERENCES colegio.estudiantes(id_estudiante),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS LOCALES (100% FUNCIONAMIENTO OFFLINE) -->
+    <script src="./js/three.min.js"></script>
+    <script src="./js/OrbitControls.js"></script>
+    <script src="./js/data.js?v=4"></script>
+    <script src="./js/app3d.js?v=4"></script>
+</body>
+</html>
