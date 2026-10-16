@@ -17,3 +17,5 @@ node_modules/
 # SQLite data local (no subir datos de prueba)
 *.sqlite
 *.db
+# Excepto la BD de ejemplo que usan las funciones serverless en Vercel
+!matriclick.db
