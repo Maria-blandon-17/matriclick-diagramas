@@ -393,6 +393,41 @@ function erdLink(id, from, to, color, description) {
     };
 }
 
+
+// -----------------------------------------------------------------------------
+// HELPERS DEL DIAGRAMA DE CLASES (coordenadas en píxeles de la lámina)
+// -----------------------------------------------------------------------------
+function umlClass(id, name, cx, cy, w, h, fill, border, attrs, methods) {
+    const lines = attrs.concat(methods);
+    return {
+        id: id, name: name, schema: "CLASE", fullName: name,
+        displayNameER: name, displayNameUML: name,
+        color: border, shape: "umlclass", kind: "class", space: "cls",
+        anchor: "rect", fill: fill, border: border, textColor: "#1A1A1A",
+        posOriginal: { x: cx, y: cy, z: 0 }, box: { w: w, h: h },
+        attrs: attrs, methods: methods,
+        description: "Clase " + name + ".",
+        columns: lines.map(function (line) {
+            return { name: line, type: line.indexOf("()") >= 0 ? "método" : "atributo", isPK: false, isFK: false, desc: line };
+        })
+    };
+}
+
+function umlEdge(id, from, fromSide, fromAt, to, toSide, toAt, via, opts) {
+    const o = opts || {};
+    return {
+        id: id, fromTable: from, toTable: to,
+        fromSide: fromSide, toSide: toSide, fromAt: fromAt, toAt: toAt,
+        via: via || [], color: "#2A2A2A",
+        arrow: o.arrow !== false, uml: true, flow: true,
+        fromMult: o.fromMult || "", toMult: o.toMult || "", midLabel: o.label || "",
+        cardinalityPhysical: (o.fromMult || "—") + " — " + (o.toMult || "—"),
+        verbERD: o.label || "asociación", verbUML: o.label || "asociación",
+        multUML: (o.fromMult || "—") + " — " + (o.toMult || "—"),
+        description: o.desc || "Asociación del diagrama de clases."
+    };
+}
+
 const PROJECT_WORKSPACES = [
     // -------------------------------------------------------------------------
     // PESTAÑA 1: BASES DE DATOS (ESQUEMA FÍSICO)
@@ -652,335 +687,83 @@ const PROJECT_WORKSPACES = [
         }
     },
 
-    // -------------------------------------------------------------------------    // PESTAÑA 3: DIAGRAMA DE CLASES UML (IMAGEN 3 DEL USUARIO)
+    // -------------------------------------------------------------------------
+    // PESTAÑA 3: DIAGRAMA DE CLASES (lámina Diagrama de Clases: Sistema Matriclick)
     // -------------------------------------------------------------------------
     {
         id: "tab_clases",
-        name: "Clases de Uso",
-        subtitle: "Diagrama de Clases UML (Basado fielmente en tu Imagen 3)",
+        name: "Diagrama de Clases",
+        subtitle: "Diagrama de Clases: Sistema Matriclick",
         status: "active",
-        bannerText: "📐 Pestaña 3: Clases de Uso (UML) (Idéntico a tu Imagen 3 con atributos tipados, multiplicidades 1..* y asociaciones como 'se encuentra en', 'dicta', etc.). Arrastra las clases libremente.",
+        bannerText: "📐 Diagrama de Clases del Sistema Matriclick, como en la lámina: atributos, métodos y multiplicidades. Arrastra cualquier clase; las líneas la siguen.",
         data: {
             info: {
-                title: "Diagrama de Clases UML - Matri-Click",
-                description: "Estructura formal de clases UML idéntica a la Imagen 3 compartida por el usuario.",
-                schemas: ["clases_uml"],
-                totalTables: 9,
-                totalRelations: 11
+                title: "Diagrama de Clases: Sistema Matriclick",
+                description: "Diagrama de clases UML del sistema Matriclick, con atributos, métodos y multiplicidades de la lámina.",
+                schemas: ["CLASE"],
+                totalTables: 10,
+                totalRelations: 11,
+                graph: true
             },
             tables: [
-                {
-                    id: "uml_grados",
-                    name: "grados",
-                    schema: "clase",
-                    fullName: "grados",
-                    displayNameER: "grados",
-                    displayNameUML: "grados",
-                    color: "#00ACC1",
-                    posOriginal: { x: -480, y: 240, z: 20 },
-                    description: "Clase grados con nivel educativo en enumeración.",
-                    columns: [
-                        { name: "- id_grado", type: "int", isPK: true, isFK: false, desc: "Identificador" },
-                        { name: "- nombre_grado", type: "string", isPK: false, isFK: false, desc: "Nombre de grado" },
-                        { name: "- nivel_educativo", type: "enum", isPK: false, isFK: false, desc: "Nivel escolar" }
-                    ]
-                },
-                {
-                    id: "uml_sedes",
-                    name: "sedes",
-                    schema: "clase",
-                    fullName: "sedes",
-                    displayNameER: "sedes",
-                    displayNameUML: "sedes",
-                    color: "#9C27B0",
-                    posOriginal: { x: -220, y: 240, z: 20 },
-                    description: "Clase sedes con ubicación física y teléfono institucional.",
-                    columns: [
-                        { name: "- id_sede", type: "int", isPK: true, isFK: false, desc: "Identificador sede" },
-                        { name: "- nombre_sede", type: "string", isPK: false, isFK: false, desc: "Nombre sede" },
-                        { name: "- direccion", type: "string", isPK: false, isFK: false, desc: "Dirección" },
-                        { name: "- telefono", type: "string", isPK: false, isFK: false, desc: "Teléfono" }
-                    ]
-                },
-                {
-                    id: "uml_profesores",
-                    name: "profesores",
-                    schema: "clase",
-                    fullName: "profesores",
-                    displayNameER: "profesores",
-                    displayNameUML: "profesores",
-                    color: "#1E88E5",
-                    posOriginal: { x: 120, y: 240, z: 20 },
-                    description: "Clase profesores con estado y métodos docentes.",
-                    columns: [
-                        { name: "- id_profesor", type: "int", isPK: true, isFK: false, desc: "ID docente" },
-                        { name: "- documento", type: "string", isPK: false, isFK: false, desc: "Documento oficial" },
-                        { name: "- nombres", type: "string", isPK: false, isFK: false, desc: "Nombres" },
-                        { name: "- apellidos", type: "string", isPK: false, isFK: false, desc: "Apellidos" },
-                        { name: "- estado_profesor", type: "enum", isPK: false, isFK: false, desc: "Estado" }
-                    ]
-                },
-                {
-                    id: "uml_acudientes",
-                    name: "acudientes",
-                    schema: "clase",
-                    fullName: "acudientes",
-                    displayNameER: "acudientes",
-                    displayNameUML: "acudientes",
-                    color: "#00897B",
-                    posOriginal: { x: 480, y: 240, z: 20 },
-                    description: "Clase acudientes con tipo de documento y parentesco.",
-                    columns: [
-                        { name: "- id_acudiente", type: "int", isPK: true, isFK: false, desc: "ID acudiente" },
-                        { name: "- tipo_documento", type: "string", isPK: false, isFK: false, desc: "Tipo de doc" },
-                        { name: "- documento", type: "string", isPK: false, isFK: false, desc: "Número" },
-                        { name: "- nombres", type: "string", isPK: false, isFK: false, desc: "Nombres" },
-                        { name: "- apellidos", type: "string", isPK: false, isFK: false, desc: "Apellidos" },
-                        { name: "- parentesco", type: "enum", isPK: false, isFK: false, desc: "Parentesco" }
-                    ]
-                },
-                {
-                    id: "uml_grupos",
-                    name: "grupos",
-                    schema: "clase",
-                    fullName: "grupos",
-                    displayNameER: "grupos",
-                    displayNameUML: "grupos",
-                    color: "#E91E63",
-                    posOriginal: { x: -280, y: -20, z: 0 },
-                    description: "Clase grupos con clave foránea a director de grupo.",
-                    columns: [
-                        { name: "- id_grupo", type: "int", isPK: true, isFK: false, desc: "ID grupo" },
-                        { name: "- id_grado", type: "int", isPK: false, isFK: true, desc: "FK Grado" },
-                        { name: "- id_sede", type: "int", isPK: false, isFK: true, desc: "FK Sede" },
-                        { name: "- nombre_grupo", type: "string", isPK: false, isFK: false, desc: "Nombre" },
-                        { name: "- cupo_maximo", type: "int", isPK: false, isFK: false, desc: "Cupo" },
-                        { name: "- id_director_grupo", type: "int", isPK: false, isFK: true, desc: "FK Director" }
-                    ]
-                },
-                {
-                    id: "uml_periodos",
-                    name: "periodos_academicos",
-                    schema: "clase",
-                    fullName: "periodos_academicos",
-                    displayNameER: "periodos_academicos",
-                    displayNameUML: "periodos_academicos",
-                    color: "#FFA000",
-                    posOriginal: { x: 80, y: -20, z: 0 },
-                    description: "Clase periodos_academicos con fechas de inicio y fin.",
-                    columns: [
-                        { name: "- id_periodo", type: "int", isPK: true, isFK: false, desc: "ID periodo" },
-                        { name: "- nombre_periodo", type: "string", isPK: false, isFK: false, desc: "Periodo" },
-                        { name: "- fecha_inicio", type: "date", isPK: false, isFK: false, desc: "Inicio" },
-                        { name: "- fecha_fin", type: "date", isPK: false, isFK: false, desc: "Fin" },
-                        { name: "- estado", type: "enum", isPK: false, isFK: false, desc: "Estado" }
-                    ]
-                },
-                {
-                    id: "uml_estudiantes",
-                    name: "estudiantes",
-                    schema: "clase",
-                    fullName: "estudiantes",
-                    displayNameER: "estudiantes",
-                    displayNameUML: "estudiantes",
-                    color: "#2E7D32",
-                    posOriginal: { x: 440, y: -20, z: 0 },
-                    description: "Clase estudiantes con documento, género y acudiente.",
-                    columns: [
-                        { name: "- id_estudiante", type: "int", isPK: true, isFK: false, desc: "ID estudiante" },
-                        { name: "- tipo_documento", type: "enum", isPK: false, isFK: false, desc: "Tipo doc" },
-                        { name: "- documento", type: "string", isPK: false, isFK: false, desc: "Número doc" },
-                        { name: "- nombres", type: "string", isPK: false, isFK: false, desc: "Nombres" },
-                        { name: "- apellidos", type: "string", isPK: false, isFK: false, desc: "Apellidos" },
-                        { name: "- genero", type: "enum", isPK: false, isFK: false, desc: "Género" },
-                        { name: "- id_acudiente", type: "int", isPK: false, isFK: true, desc: "FK Acudiente" },
-                        { name: "- estado_estudiante", type: "enum", isPK: false, isFK: false, desc: "Estado" }
-                    ]
-                },
-                {
-                    id: "uml_matriculas",
-                    name: "matriculas",
-                    schema: "clase",
-                    fullName: "matriculas",
-                    displayNameER: "matriculas",
-                    displayNameUML: "matriculas",
-                    color: "#E53935",
-                    posOriginal: { x: -60, y: -280, z: 0 },
-                    description: "Clase central matriculas vinculada a estudiantes y grupos.",
-                    columns: [
-                        { name: "- id_matricula", type: "int", isPK: true, isFK: false, desc: "ID matrícula" },
-                        { name: "- codigo_matricula", type: "string", isPK: false, isFK: false, desc: "Código" },
-                        { name: "- id_estudiante", type: "int", isPK: false, isFK: true, desc: "FK Estudiante" },
-                        { name: "- id_periodo", type: "int", isPK: false, isFK: true, desc: "FK Periodo" },
-                        { name: "- id_grupo", type: "int", isPK: false, isFK: true, desc: "FK Grupo" },
-                        { name: "- estado_matricula", type: "enum", isPK: false, isFK: false, desc: "Estado" },
-                        { name: "- observaciones", type: "string", isPK: false, isFK: false, desc: "Notas" }
-                    ]
-                },
-                {
-                    id: "uml_perfiles",
-                    name: "perfiles",
-                    schema: "clase",
-                    fullName: "perfiles",
-                    displayNameER: "perfiles",
-                    displayNameUML: "perfiles",
-                    color: "#7B1FA2",
-                    posOriginal: { x: 420, y: -280, z: 0 },
-                    description: "Clase perfiles con rol en enum y vinculaciones polimórficas.",
-                    columns: [
-                        { name: "- id", type: "int", isPK: true, isFK: false, desc: "ID perfil" },
-                        { name: "- rol", type: "enum", isPK: false, isFK: false, desc: "Rol sistema" },
-                        { name: "- nombre_completo", type: "string", isPK: false, isFK: false, desc: "Nombre" },
-                        { name: "- id_profesor", type: "int", isPK: false, isFK: true, desc: "FK Profesor" },
-                        { name: "- id_acudiente", type: "int", isPK: false, isFK: true, desc: "FK Acudiente" },
-                        { name: "- id_estudiante", type: "int", isPK: false, isFK: true, desc: "FK Estudiante" }
-                    ]
-                }
+                umlClass("cls_sedes", "Sedes", 387, 120, 130, 84, "#8EC6EA", "#5E94B8", [
+                    "+ id_sede: char(36)", "+ nombre_sede: varchar(100)", "+ direccion: text",
+                    "+ telefono: varchar(50)", "+ imagen_url: text"
+                ], []),
+                umlClass("cls_auth", "Auth_Usuarios", 673, 135, 150, 102, "#8EC6EA", "#5E94B8", [
+                    "- email: varchar(320)", "- password_hask: varchar(255)", "- is_active: boolean"
+                ], ["+ autenticar()", "+ cambiarContraseña()", "+ resetContraseña()"]),
+                umlClass("cls_perfiles", "Perfiles", 902, 147, 188, 126, "#8EC6EA", "#5E94B8", [
+                    "+ id_perfil: char(36)", "+ usuario_id: char(36)",
+                    "+ rol: enum('Acudiente','Profesor','Estudiante')",
+                    "+ nombre_completo: varchar(255)", "+ terminos_aceptados: boolean"
+                ], ["+ getRol()", "+ actualizarPerfil()", "+ gestionarPermisos()"]),
+                umlClass("cls_grados", "Grados", 134, 273, 204, 102, "#F6C894", "#D09258", [
+                    "+ id_grado: char(36)", "+ nombre_grado: varchar(100)",
+                    "+ nivel_educativo: enum('Primaria','Bachillerato')",
+                    "- #grados: int", "- \"Tot Est*\": int"
+                ], ["+ getGradosConGrupos()"]),
+                umlClass("cls_grupos", "Grupos", 385, 314, 166, 132, "#F6C894", "#D09258", [
+                    "+ id_grupo: char(36)", "+ grado_id: char(36)", "+ sede_id: char(36)",
+                    "+ nombre_grupo: varchar(100)", "+ cupo_maximo: int",
+                    "+ id_director_grupo: char(36)", "- \"Tot Grupo\": int"
+                ], ["+ crearGrupo()", "+ asignarDirector()", "+ getGruposPorSede()"]),
+                umlClass("cls_matriculas", "Matriculas", 678, 293, 212, 154, "#F6C894", "#D09258", [
+                    "+ id_matricula: char(36)", "+ estudiante_id: char(36)", "+ periodo_id: char(36)",
+                    "+ grupo_id: char(36)", "+ sede_id: char(36)", "+ acudiente_solicitante_id: char(36)",
+                    "+ fecha_matricula: date('Activa','Cancelada...')", "+ estado: enum(...)"
+                ], ["+ generarFicha()", "+ validarMatricula()"]),
+                umlClass("cls_periodos", "Periodos Académicos", 132, 449, 196, 142, "#C5DDB4", "#7EA56C", [
+                    "+ nombre_periodo", "+ id_periodo: char(36)", "+ nombre_periodo: varchar(100)",
+                    "+ fecha_inicio: date", "+ fecha_fin: date",
+                    "+ estado_enum:enum('Activo', 'Finalizado')"
+                ], ["+ crearPeriodo()", "+ modificarPeriodo()", "+ getPeriodosActivos()"]),
+                umlClass("cls_profesores", "Profesores", 392, 469, 176, 114, "#C5DDB4", "#7EA56C", [
+                    "+ id_profesor: char(36)", "+ perfil_id: char(36)", "+ documento: varchar(50)",
+                    "+ telefonn: varchar(50)", "+ correo: varchar(100)",
+                    "+ estado: enum(...), vec. varchar(30)"
+                ], ["+ getProfesoresPorCarga()", "+ asignarCargaHoraria()"]),
+                umlClass("cls_estudiantes", "Estudiantes", 670, 461, 184, 114, "#F6C894", "#D09258", [
+                    "+ id_estudiante: char(36)", "+ perfil_id: char(36)", "+ documento: varchar(50)",
+                    "+ genero: char(1)", "+ estado: enum('Activa', 'Finalizado')"
+                ], ["+ getHistorialAcademico()", "+ actualizarDatosEstudiante()"]),
+                umlClass("cls_acudientes", "Acudientes", 904, 453, 172, 118, "#8EC6EA", "#5E94B8", [
+                    "+ id_acudiente: char(36)", "+ perfil_id: char(36)",
+                    "+ tipo_documento: enum('TI','CE')", "+ parentesco: enum(...), 'Tutor'"
+                ], ["+ actualizarParentesco()", "+ getEstudiantesACargo()"])
             ],
             relations: [
-                {
-                    id: "rel_u_grados_grupos",
-                    fromTable: "uml_grados",
-                    toTable: "uml_grupos",
-                    fromCol: "id_grado",
-                    toCol: "id_grado",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "1 ─── 0..*",
-                    color: "#00ACC1",
-                    description: "grados (1) tiene (0..*) grupos"
-                },
-                {
-                    id: "rel_u_sedes_grupos",
-                    fromTable: "uml_sedes",
-                    toTable: "uml_grupos",
-                    fromCol: "id_sede",
-                    toCol: "id_sede",
-                    cardinalityPhysical: "se encuentra en",
-                    verbERD: "se encuentra en",
-                    verbUML: "se encuentra en",
-                    multUML: "1 ─── 0..*",
-                    color: "#9C27B0",
-                    description: "sedes (1) se encuentra en (0..*) grupos"
-                },
-                {
-                    id: "rel_u_prof_grupos",
-                    fromTable: "uml_profesores",
-                    toTable: "uml_grupos",
-                    fromCol: "id_profesor",
-                    toCol: "id_director_grupo",
-                    cardinalityPhysical: "dicta",
-                    verbERD: "dicta",
-                    verbUML: "dicta",
-                    multUML: "1 ─── 0..*",
-                    color: "#1E88E5",
-                    description: "profesores (1) dicta (0..*) grupos"
-                },
-                {
-                    id: "rel_u_per_grupos",
-                    fromTable: "uml_periodos",
-                    toTable: "uml_grupos",
-                    fromCol: "id_periodo",
-                    toCol: "id_grupo",
-                    cardinalityPhysical: "se ofrece en",
-                    verbERD: "se ofrece en",
-                    verbUML: "se ofrece en",
-                    multUML: "1 ─── 0..*",
-                    color: "#FFA000",
-                    description: "periodos_academicos (1) se ofrece en (0..*) grupos"
-                },
-                {
-                    id: "rel_u_grupos_mat",
-                    fromTable: "uml_grupos",
-                    toTable: "uml_matriculas",
-                    fromCol: "id_grupo",
-                    toCol: "id_grupo",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "1 ─── 0..*",
-                    color: "#E91E63",
-                    description: "grupos (1) tiene (0..*) matriculas"
-                },
-                {
-                    id: "rel_u_per_mat",
-                    fromTable: "uml_periodos",
-                    toTable: "uml_matriculas",
-                    fromCol: "id_periodo",
-                    toCol: "id_periodo",
-                    cardinalityPhysical: "se realiza en",
-                    verbERD: "se realiza en",
-                    verbUML: "se realiza en",
-                    multUML: "1 ─── 0..*",
-                    color: "#FFA000",
-                    description: "periodos_academicos (1) se realiza en (0..*) matriculas"
-                },
-                {
-                    id: "rel_u_est_mat",
-                    fromTable: "uml_estudiantes",
-                    toTable: "uml_matriculas",
-                    fromCol: "id_estudiante",
-                    toCol: "id_estudiante",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "1 ─── 0..*",
-                    color: "#2E7D32",
-                    description: "estudiantes (1) tiene (0..*) matriculas"
-                },
-                {
-                    id: "rel_u_est_per",
-                    fromTable: "uml_estudiantes",
-                    toTable: "uml_periodos",
-                    fromCol: "id_estudiante",
-                    toCol: "id_periodo",
-                    cardinalityPhysical: "incluido_en",
-                    verbERD: "incluido_en",
-                    verbUML: "incluido_en",
-                    multUML: "1 ─── 0..*",
-                    color: "#2E7D32",
-                    description: "estudiantes (1) incluido_en (0..*) periodos_academicos"
-                },
-                {
-                    id: "rel_u_acud_est",
-                    fromTable: "uml_acudientes",
-                    toTable: "uml_estudiantes",
-                    fromCol: "id_acudiente",
-                    toCol: "id_acudiente",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "1 ─── 0..*",
-                    color: "#00897B",
-                    description: "acudientes (1) tiene (0..*) estudiantes"
-                },
-                {
-                    id: "rel_u_perf_est",
-                    fromTable: "uml_perfiles",
-                    toTable: "uml_estudiantes",
-                    fromCol: "id_estudiante",
-                    toCol: "id_estudiante",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "1 ─── 1",
-                    color: "#7B1FA2",
-                    description: "perfiles (1) tiene (1) estudiantes"
-                },
-                {
-                    id: "rel_u_perf_mat",
-                    fromTable: "uml_perfiles",
-                    toTable: "uml_matriculas",
-                    fromCol: "id",
-                    toCol: "id_matricula",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "1 ─── 0..*",
-                    color: "#7B1FA2",
-                    description: "perfiles (1) tiene (0..*) matriculas"
-                }
+                umlEdge("cu_sed_gru", "cls_sedes", "bottom", 387, "cls_grupos", "top", 385, [], { arrow: false, fromMult: "1", toMult: "N", desc: "Sedes 1 — N Grupos." }),
+                umlEdge("cu_gra_gru", "cls_grados", "right", 273, "cls_grupos", "left", 273, [], { fromMult: "1", toMult: "1", desc: "Grados 1 — 1 Grupos." }),
+                umlEdge("cu_per_gru", "cls_periodos", "right", 441, "cls_grupos", "left", 311, [[265, 441], [265, 311]], { fromMult: "1", toMult: "N", desc: "Periodos Académicos 1 — N Grupos." }),
+                umlEdge("cu_gru_mat", "cls_grupos", "right", 288, "cls_matriculas", "left", 288, [], { fromMult: "N", toMult: "1", desc: "Grupos N — 1 Matriculas." }),
+                umlEdge("cu_mat_pro", "cls_matriculas", "left", 322, "cls_profesores", "right", 453, [[524, 322], [524, 288], [524, 453]], { fromMult: "N", toMult: "1", desc: "Matriculas N — 1 Profesores." }),
+                umlEdge("cu_pro_gru", "cls_profesores", "top", 392, "cls_grupos", "bottom", 392, [], { fromMult: "", toMult: "1", label: "director", desc: "Profesores dirige Grupos (director, 1)." }),
+                umlEdge("cu_aut_per", "cls_auth", "right", 125, "cls_perfiles", "left", 125, [], { fromMult: "1", toMult: "1", desc: "Auth_Usuarios 1 — 1 Perfiles." }),
+                umlEdge("cu_per_acu", "cls_perfiles", "bottom", 901, "cls_acudientes", "top", 904, [], { fromMult: "1", toMult: "N", desc: "Perfiles 1 — N Acudientes." }),
+                umlEdge("cu_per_est", "cls_perfiles", "bottom", 854, "cls_estudiantes", "top", 754, [[854, 380], [754, 380]], { fromMult: "1", toMult: "", desc: "Perfiles 1 — Estudiantes." }),
+                umlEdge("cu_est_mat", "cls_estudiantes", "top", 674, "cls_matriculas", "bottom", 674, [], { fromMult: "1", toMult: "N", desc: "Estudiantes 1 — N Matriculas." }),
+                umlEdge("cu_acu_est", "cls_acudientes", "left", 450, "cls_estudiantes", "right", 450, [], { fromMult: "N", toMult: "1", desc: "Acudientes N — 1 Estudiantes." })
             ]
         }
     },

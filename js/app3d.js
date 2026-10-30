@@ -187,13 +187,14 @@ function loadWorkspace(idx) {
     if (idx === 3) {
         applyUseCaseAtmosphere();
         buildUseCaseFrame(workspace.data.frame);
-    } else if (idx === 0 || idx === 4) {
+    } else if (idx === 0 || idx === 4 || idx === 2) {
         applySchemaAtmosphere();
+        if (idx === 2) buildClassCaption();
     }
 
     // Actualizar UI del banner y badge
     const badge = document.getElementById("active-diagram-badge");
-    const titles = ["BASE DE DATOS", "MODELO ENTIDAD RELACIÓN", "CLASES DE USO", "CASOS DE USO", "DIAGRAMA DE FLUJO"];
+    const titles = ["BASE DE DATOS", "MODELO ENTIDAD RELACIÓN", "DIAGRAMA DE CLASES", "CASOS DE USO", "DIAGRAMA DE FLUJO"];
     if (badge) badge.textContent = titles[idx] || `DIAGRAMA ${idx + 1}`;
 
     const hint = document.getElementById("tab-banner-hint");
@@ -527,6 +528,8 @@ function generateShapeCanvas(tableData) {
             ? { w: tableData.box.w * FLOW_S, h: tableData.box.h * FLOW_S }
             : tableData.shape === "erd"
             ? { w: tableData.box.w * ERD_S, h: tableData.box.h * ERD_S }
+            : tableData.shape === "umlclass"
+            ? { w: tableData.box.w * CLS_S, h: tableData.box.h * CLS_S }
             : (tableData.box || { w: 220, h: 86 });
     const width = box.w;
     const height = box.h;
@@ -613,6 +616,8 @@ function generateShapeCanvas(tableData) {
             drawFlowNode(ctx, w, h, tableData);
         } else if (tableData.shape === "erd") {
             drawErdNode(ctx, w, h, tableData);
+        } else if (tableData.shape === "umlclass") {
+            drawUmlClass(ctx, w, h, tableData);
         }
     });
     return { texture, width, height };
@@ -818,6 +823,180 @@ function buildStraightEdgeGroup(rel, fromMesh, toMesh) {
 }
 
 // -----------------------------------------------------------------------------
+// 3e. DIAGRAMA DE CLASES UML (CAJAS, ATRIBUTOS, MÉTODOS Y MULTIPLICIDADES)
+// -----------------------------------------------------------------------------
+const CLS_S = 1.55;
+const CLS_CX = 512;
+const CLS_CY = 277;
+const UML_LINE_R = 1.15;
+
+function clsX(px) { return (px - CLS_CX) * CLS_S; }
+function clsY(py) { return (CLS_CY - py) * CLS_S; }
+
+function drawUmlClass(ctx, w, h, t) {
+    const S = CLS_S;
+    ctx.fillStyle = t.fill;
+    ctx.strokeStyle = t.border;
+    ctx.lineWidth = 1.25 * S;
+    ctx.beginPath();
+    ctx.rect(0.8, 0.8, w - 1.6, h - 1.6);
+    ctx.fill();
+    ctx.stroke();
+
+    const attrs = t.attrs || [];
+    const methods = t.methods || [];
+    const headerH = 20 * S;
+    const slots = Math.max(1, attrs.length + methods.length);
+    const row = (h - headerH) / slots;
+
+    let titlePx = Math.min(15 * S, headerH * 0.72);
+    ctx.font = `700 ${titlePx}px system-ui, Segoe UI, sans-serif`;
+    const titleW = ctx.measureText(t.name).width;
+    if (titleW > w - 12 * S) titlePx *= (w - 12 * S) / titleW;
+    ctx.fillStyle = "#1A1A1A";
+    ctx.font = `700 ${titlePx}px system-ui, Segoe UI, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(t.name, w / 2, headerH / 2);
+
+    ctx.strokeStyle = t.border;
+    ctx.lineWidth = 1.1 * S;
+    ctx.beginPath();
+    ctx.moveTo(1, headerH);
+    ctx.lineTo(w - 1, headerH);
+    ctx.stroke();
+
+    const lines = attrs.concat(methods);
+    let fontPx = Math.min(12.5 * S, row * 0.78);
+    ctx.font = `500 ${fontPx}px system-ui, Segoe UI, sans-serif`;
+    const widest = lines.reduce((m, line) => Math.max(m, ctx.measureText(line).width), 0);
+    const maxW = w - 14 * S;
+    if (widest > maxW && widest > 0) fontPx *= (maxW / widest) * 0.98;
+    ctx.font = `500 ${fontPx}px system-ui, Segoe UI, sans-serif`;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#1A1A1A";
+    attrs.forEach((line, i) => {
+        ctx.fillText(line, 5 * S, headerH + row * (i + 0.5));
+    });
+    if (methods.length) {
+        const y = headerH + attrs.length * row;
+        ctx.strokeStyle = t.border;
+        ctx.beginPath();
+        ctx.moveTo(1, y);
+        ctx.lineTo(w - 1, y);
+        ctx.stroke();
+        ctx.font = `500 ${fontPx}px system-ui, Segoe UI, sans-serif`;
+        ctx.fillStyle = "#1A1A1A";
+        methods.forEach((line, i) => {
+            ctx.fillText(line, 5 * S, y + row * (i + 0.5));
+        });
+    }
+}
+
+function umlAnchor(mesh, side, at) {
+    const t = mesh.userData.tableData;
+    const hw = (mesh.userData.cardWidth || 100) / 2;
+    const hh = (mesh.userData.cardHeight || 60) / 2;
+    const c = mesh.position;
+    if (side === "left" || side === "right") {
+        const dy = (t.posOriginal.y - at) * CLS_S;
+        const y = c.y + Math.max(-hh + 2, Math.min(hh - 2, dy));
+        return new THREE.Vector3(side === "left" ? c.x - hw : c.x + hw, y, -2);
+    }
+    const dx = (at - t.posOriginal.x) * CLS_S;
+    const x = c.x + Math.max(-hw + 2, Math.min(hw - 2, dx));
+    return new THREE.Vector3(x, side === "top" ? c.y + hh : c.y - hh, -2);
+}
+
+function addUmlArrow(group, tip, dir, mat) {
+    const h = 11;
+    const r = 3.6;
+    const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), mat);
+    m.position.copy(tip).addScaledVector(dir, -h / 2);
+    m.quaternion.setFromUnitVectors(FLOW_UP, dir);
+    group.add(m);
+}
+
+function addUmlLabel(group, text, x, y) {
+    if (!text) return;
+    const worldW = Math.max(22, text.length * 12 + 8);
+    const plane = makeTextPlane(text, worldW, 22, {
+        fontPx: 15,
+        color: "#1a1a1a",
+        bold: true,
+        align: "center"
+    });
+    plane.position.set(x, y, 4);
+    group.add(plane);
+}
+
+function umlMultPos(anchor, side, text) {
+    const p = anchor.clone();
+    if (side === "left") { p.x -= 16; p.y += 13; }
+    else if (side === "right") { p.x += 16; p.y += 13; }
+    else if (side === "top") { p.y += 15; p.x -= 14; }
+    else { p.y -= 15; p.x -= 14; }
+    return p;
+}
+
+function buildUmlEdgeGroup(rel, fromMesh, toMesh) {
+    const pts = [umlAnchor(fromMesh, rel.fromSide, rel.fromAt)];
+    (rel.via || []).forEach(p => pts.push(new THREE.Vector3(clsX(p[0]), clsY(p[1]), -2)));
+    pts.push(umlAnchor(toMesh, rel.toSide, rel.toAt));
+
+    const group = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(rel.color || "#2A2A2A") });
+    for (let i = 0; i < pts.length - 1; i++) addFlowSegment(group, pts[i], pts[i + 1], mat, UML_LINE_R);
+    for (let i = 1; i < pts.length - 1; i++) {
+        const j = new THREE.Mesh(new THREE.SphereGeometry(UML_LINE_R, 6, 6), mat);
+        j.position.copy(pts[i]);
+        group.add(j);
+    }
+    if (rel.arrow !== false && pts.length >= 2) {
+        const last = pts[pts.length - 1];
+        const prev = pts[pts.length - 2];
+        if (last.distanceTo(prev) > 0.01) {
+            addUmlArrow(group, last, new THREE.Vector3().subVectors(last, prev).normalize(), mat);
+        }
+    }
+    const a = umlMultPos(pts[0], rel.fromSide, rel.fromMult);
+    const b = umlMultPos(pts[pts.length - 1], rel.toSide, rel.toMult);
+    addUmlLabel(group, rel.fromMult, a.x, a.y);
+    addUmlLabel(group, rel.toMult, b.x, b.y);
+    if (rel.midLabel) {
+        const mid = pts[Math.floor((pts.length - 1) / 2)].clone().lerp(pts[Math.ceil((pts.length - 1) / 2)], 0.5);
+        addUmlLabel(group, rel.midLabel, mid.x + 42, mid.y);
+    }
+    return group;
+}
+
+function buildClassCaption() {
+    const title = makeTextPlane("Diagrama de Clases: Sistema Matriclick", 980, 52, {
+        fontPx: 34, color: "#1a1a1a", bold: true, align: "center"
+    });
+    title.position.set(clsX(512), clsY(26), 1);
+    scene.add(title);
+    useCaseExtras.push(title);
+
+    const rule = new THREE.Mesh(
+        new THREE.PlaneGeometry(1040, 1.6),
+        new THREE.MeshBasicMaterial({ color: 0xc5c5c5 })
+    );
+    rule.position.set(clsX(512), clsY(50), -6);
+    scene.add(rule);
+    useCaseExtras.push(rule);
+
+    [["left", 150], ["right", 860]].forEach(([align, x]) => {
+        const foot = makeTextPlane("Proyecto: Automatización Matriclick", 460, 30, {
+            fontPx: 16, color: "#1a1a1a", bold: true, align: align
+        });
+        foot.position.set(clsX(x), clsY(546), 1);
+        scene.add(foot);
+        useCaseExtras.push(foot);
+    });
+}
+
+// -----------------------------------------------------------------------------
 // 3c. DIAGRAMA DE FLUJO (NODOS Y FLECHAS EN 3D, COORDENADAS DE LA LÁMINA)
 // -----------------------------------------------------------------------------
 const FLOW_S = 1.2;      // escala de píxeles de la lámina a unidades 3D
@@ -834,6 +1013,7 @@ function getCameraPreset(idx) {
     if (idx === 0) return { x: 0, y: 0, z: 2700 };
     if (idx === 4) return { x: 0, y: 0, z: 1800 };
     if (idx === 1) return { x: 0, y: 0, z: 1600 };
+    if (idx === 2) return { x: 0, y: 0, z: 1680 };
     return { x: 0, y: 100, z: 1100 };
 }
 
@@ -930,6 +1110,7 @@ function addFlowArrow(group, tip, dir, mat) {
 }
 
 function buildFlowEdgeGroup(rel, fromMesh, toMesh) {
+    if (rel.uml) return buildUmlEdgeGroup(rel, fromMesh, toMesh);
     if (rel.straight) return buildStraightEdgeGroup(rel, fromMesh, toMesh);
     const pts = [flowAnchor(fromMesh, rel.fromSide)];
     (rel.via || []).forEach(p => pts.push(new THREE.Vector3(flowX(p[0]), flowY(p[1]), -2)));
@@ -1227,6 +1408,10 @@ function getTablePosition(tableData, layout) {
     if (tableData.space === "erd") {
         const p = tableData.posOriginal;
         return { x: (p.x - ERD_CX) * ERD_S, y: (ERD_CY - p.y) * ERD_S, z: 0 };
+    }
+    if (tableData.space === "cls") {
+        const p = tableData.posOriginal;
+        return { x: clsX(p.x), y: clsY(p.y), z: 0 };
     }
     if (tableData.flowPx) {
         const p = tableData.posOriginal;
@@ -1719,7 +1904,7 @@ function setupUIControls() {
             showToast("Vista frontal del esquema");
             return;
         }
-        flyCameraTo(0, 0, currentWorkspaceIdx === 4 ? 1800 : currentWorkspaceIdx === 1 ? 1600 : 1400);
+        flyCameraTo(0, 0, currentWorkspaceIdx === 4 ? 1800 : currentWorkspaceIdx === 1 ? 1600 : currentWorkspaceIdx === 2 ? 1680 : 1400);
         showToast("Vista Frontal Plana");
     });
 
@@ -1745,6 +1930,8 @@ function setupUIControls() {
             flyCameraTo(0, 0, 1800);
         } else if (currentWorkspaceIdx === 1) {
             flyCameraTo(0, 0, 1600);
+        } else if (currentWorkspaceIdx === 2) {
+            flyCameraTo(0, 0, 1680);
         } else {
             flyCameraTo(0, 120, 1300);
             controls.target.set(0, 0, 0);
