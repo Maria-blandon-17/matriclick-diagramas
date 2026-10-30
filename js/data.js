@@ -344,6 +344,55 @@ function flowEdge(id, from, fromSide, to, toSide, via, color, arrow, dashed, des
     };
 }
 
+// -----------------------------------------------------------------------------
+// HELPERS DEL MODELO ENTIDAD RELACIÓN (coordenadas en píxeles de la lámina)
+// -----------------------------------------------------------------------------
+function erdEntity(id, label, cx, cy, w, h, fill, border) {
+    return {
+        id: id, name: label, schema: "ENTIDAD", fullName: label,
+        displayNameER: label.toUpperCase(), displayNameUML: label,
+        color: border, shape: "erd", kind: "entity", space: "erd",
+        anchor: "rect", fill: fill, border: border, textColor: "#FFFFFF",
+        posOriginal: { x: cx, y: cy, z: 0 }, box: { w: w, h: h },
+        labelLines: [label], description: "Entidad " + label + ".",
+        columns: [{ name: "entidad", type: "Entidad", isPK: true, isFK: false, desc: label }]
+    };
+}
+
+function erdAttr(id, label, cx, cy, fill) {
+    const w = Math.round(label.length * 5.2 + 20);
+    return {
+        id: id, name: label, schema: "ATRIBUTO", fullName: label,
+        displayNameER: label, displayNameUML: label,
+        color: fill, shape: "erd", kind: "attribute", space: "erd",
+        anchor: "ellipse", fill: fill, border: "#7A8CA8", textColor: "#1A1A1A",
+        posOriginal: { x: cx, y: cy, z: 0 }, box: { w: w, h: 24 },
+        labelLines: [label], description: "Atributo " + label + ".",
+        columns: [{ name: "atributo", type: "Atributo", isPK: false, isFK: false, desc: label }]
+    };
+}
+
+function erdRel(id, label, cx, cy, w, h) {
+    return {
+        id: id, name: label, schema: "RELACIÓN", fullName: label,
+        displayNameER: label.toUpperCase(), displayNameUML: label,
+        color: "#4FC3F7", shape: "erd", kind: "relationship", space: "erd",
+        anchor: "diamond", fill: "#1F3B5C", border: "#7FB3E0", textColor: "#FFFFFF",
+        posOriginal: { x: cx, y: cy, z: 0 }, box: { w: w, h: h },
+        labelLines: [label], description: "Relación " + label + ".",
+        columns: [{ name: "relación", type: "Relación", isPK: true, isFK: false, desc: label }]
+    };
+}
+
+function erdLink(id, from, to, color, description) {
+    return {
+        id: id, fromTable: from, toTable: to, color: color,
+        via: [], arrow: false, dashed: false, flow: true, straight: true,
+        cardinalityPhysical: "relación", verbERD: "relación", verbUML: "relación",
+        multUML: "—", description: description
+    };
+}
+
 const PROJECT_WORKSPACES = [
     // -------------------------------------------------------------------------
     // PESTAÑA 1: BASES DE DATOS (ESQUEMA FÍSICO)
@@ -357,348 +406,248 @@ const PROJECT_WORKSPACES = [
         data: DATABASE_METADATA
     },
 
-    // -------------------------------------------------------------------------    // PESTAÑA 2: DIAGRAMA MODELO ENTIDAD RELACIÓN (IMAGEN 2 DEL USUARIO)
+    // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // PESTAÑA 2: MODELO ENTIDAD RELACIÓN (lámina de referencia, coordenadas en px)
     // -------------------------------------------------------------------------
     {
         id: "tab_erd",
         name: "Modelo Entidad Relación",
-        subtitle: "Modelo Conceptual ERD (Basado fielmente en tu Imagen 2)",
+        subtitle: "Modelo Entidad Relación - Matriclick",
         status: "active",
-        bannerText: "🏷️ Pestaña 2: Modelo Entidad Relación (ERD Conceptual idéntico a tu Imagen 2 con los verbos de relación 'tiene', 'abarca', 'realiza', 'responsable_por', etc.). Arrastra las entidades libremente.",
+        bannerText: "🏷️ Modelo Entidad Relación de Matriclick, como en la lámina. Arrastra entidades, atributos o relaciones; las líneas los siguen.",
         data: {
             info: {
-                title: "Modelo Entidad-Relación Conceptual - Matri-Click",
-                description: "Representación conceptual ERD idéntica a la Imagen 2 compartida por el usuario.",
-                schemas: ["colegio"],
-                totalTables: 9,
-                totalRelations: 12
+                title: "Modelo Entidad Relación - Matriclick",
+                description: "Entidades, atributos y relaciones del modelo entidad relación, como en la lámina.",
+                schemas: ["ENTIDAD", "ATRIBUTO", "RELACIÓN"],
+                totalTables: 10,
+                totalRelations: 0,
+                graph: true
             },
             tables: [
-                {
-                    id: "erd_sedes",
-                    name: "SEDES",
-                    schema: "colegio",
-                    fullName: "SEDES",
-                    displayNameER: "SEDES",
-                    displayNameUML: "SEDES",
-                    color: "#9C27B0",
-                    posOriginal: { x: -480, y: 240, z: 20 },
-                    description: "Entidad SEDES con identificador UUID y datos de contacto.",
-                    columns: [
-                        { name: "id_sede", type: "UUID [PK]", isPK: true, isFK: false, desc: "Llave primaria" },
-                        { name: "nombre_sede", type: "string", isPK: false, isFK: false, desc: "Nombre de sede" },
-                        { name: "direccion", type: "string", isPK: false, isFK: false, desc: "Dirección física" },
-                        { name: "telefono", type: "string", isPK: false, isFK: false, desc: "Línea telefónica" }
-                    ]
-                },
-                {
-                    id: "erd_grados",
-                    name: "GRADOS",
-                    schema: "colegio",
-                    fullName: "GRADOS",
-                    displayNameER: "GRADOS",
-                    displayNameUML: "GRADOS",
-                    color: "#00ACC1",
-                    posOriginal: { x: -240, y: 240, z: 20 },
-                    description: "Entidad GRADOS con nivel educativo en enumeración.",
-                    columns: [
-                        { name: "id_grado", type: "UUID [PK]", isPK: true, isFK: false, desc: "Llave primaria" },
-                        { name: "nombre_grado", type: "string", isPK: false, isFK: false, desc: "Nombre de grado" },
-                        { name: "nivel_educativo", type: "enum", isPK: false, isFK: false, desc: "Primaria/Secundaria/Media" }
-                    ]
-                },
-                {
-                    id: "erd_profesores",
-                    name: "PROFESORES",
-                    schema: "colegio",
-                    fullName: "PROFESORES",
-                    displayNameER: "PROFESORES",
-                    displayNameUML: "PROFESORES",
-                    color: "#1E88E5",
-                    posOriginal: { x: 120, y: 240, z: 20 },
-                    description: "Entidad PROFESORES con documento oficial y estado del docente.",
-                    columns: [
-                        { name: "id_profesor", type: "UUID [PK]", isPK: true, isFK: false, desc: "Llave primaria" },
-                        { name: "documento", type: "string", isPK: false, isFK: false, desc: "Cédula" },
-                        { name: "nombres", type: "string", isPK: false, isFK: false, desc: "Nombres" },
-                        { name: "apellidos", type: "string", isPK: false, isFK: false, desc: "Apellidos" },
-                        { name: "estado_profesor", type: "enum", isPK: false, isFK: false, desc: "Activo/Licencia" }
-                    ]
-                },
-                {
-                    id: "erd_acudientes",
-                    name: "ACUDIENTES",
-                    schema: "colegio",
-                    fullName: "ACUDIENTES",
-                    displayNameER: "ACUDIENTES",
-                    displayNameUML: "ACUDIENTES",
-                    color: "#00897B",
-                    posOriginal: { x: 480, y: 240, z: 20 },
-                    description: "Entidad ACUDIENTES con parentesco del menor.",
-                    columns: [
-                        { name: "id_acudiente", type: "UUID [PK]", isPK: true, isFK: false, desc: "Llave primaria" },
-                        { name: "tipo_documento", type: "UUID", isPK: false, isFK: false, desc: "Tipo de doc" },
-                        { name: "documento", type: "string", isPK: false, isFK: false, desc: "Cédula acudiente" },
-                        { name: "nombres", type: "string", isPK: false, isFK: false, desc: "Nombres" },
-                        { name: "apellidos", type: "string", isPK: false, isFK: false, desc: "Apellidos" },
-                        { name: "parentesco", type: "enum", isPK: false, isFK: false, desc: "Madre/Padre/Tutor" }
-                    ]
-                },
-                {
-                    id: "erd_grupos",
-                    name: "GRUPOS",
-                    schema: "colegio",
-                    fullName: "GRUPOS",
-                    displayNameER: "GRUPOS",
-                    displayNameUML: "GRUPOS",
-                    color: "#E91E63",
-                    posOriginal: { x: -240, y: -20, z: 0 },
-                    description: "Entidad GRUPOS que vincula grado, sede y director de grupo.",
-                    columns: [
-                        { name: "id_grupo", type: "UUID [PK]", isPK: true, isFK: false, desc: "Llave primaria" },
-                        { name: "id_grado", type: "UUID [FK]", isPK: false, isFK: true, desc: "Grado" },
-                        { name: "id_sede", type: "UUID [FK]", isPK: false, isFK: true, desc: "Sede" },
-                        { name: "nombre_grupo", type: "string", isPK: false, isFK: false, desc: "Sección" },
-                        { name: "cupo_maximo", type: "int", isPK: false, isFK: false, desc: "Límite cupos" },
-                        { name: "id_director_grupo", type: "UUID [FK]", isPK: false, isFK: true, desc: "Profesor director" }
-                    ]
-                },
-                {
-                    id: "erd_periodos",
-                    name: "PERIODOS_ACADEMICOS",
-                    schema: "colegio",
-                    fullName: "PERIODOS_ACADEMICOS",
-                    displayNameER: "PERIODOS_ACADEMICOS",
-                    displayNameUML: "PERIODOS_ACADEMICOS",
-                    color: "#FFA000",
-                    posOriginal: { x: 120, y: -20, z: 0 },
-                    description: "Entidad PERIODOS_ACADEMICOS para el control de ciclos escolares.",
-                    columns: [
-                        { name: "id_periodo", type: "UUID [PK]", isPK: true, isFK: false, desc: "Llave primaria" },
-                        { name: "nombre_periodo", type: "string", isPK: false, isFK: false, desc: "Ciclo lectivo" },
-                        { name: "fecha_inicio", type: "date", isPK: false, isFK: false, desc: "Inicio" },
-                        { name: "fecha_fin", type: "date", isPK: false, isFK: false, desc: "Cierre" },
-                        { name: "estado", type: "enum", isPK: false, isFK: false, desc: "Estado periodo" }
-                    ]
-                },
-                {
-                    id: "erd_estudiantes",
-                    name: "ESTUDIANTES",
-                    schema: "colegio",
-                    fullName: "ESTUDIANTES",
-                    displayNameER: "ESTUDIANTES",
-                    displayNameUML: "ESTUDIANTES",
-                    color: "#2E7D32",
-                    posOriginal: { x: 480, y: -20, z: 0 },
-                    description: "Entidad ESTUDIANTES asociada a su acudiente responsable.",
-                    columns: [
-                        { name: "id_estudiante", type: "UUID [PK]", isPK: true, isFK: false, desc: "Llave primaria" },
-                        { name: "tipo_documento", type: "enum", isPK: false, isFK: false, desc: "TI/RC" },
-                        { name: "documento", type: "string", isPK: false, isFK: false, desc: "Identificación" },
-                        { name: "nombres", type: "string", isPK: false, isFK: false, desc: "Nombres" },
-                        { name: "apellidos", type: "string", isPK: false, isFK: false, desc: "Apellidos" },
-                        { name: "genero", type: "enum", isPK: false, isFK: false, desc: "Género" },
-                        { name: "id_acudiente", type: "UUID [FK]", isPK: false, isFK: true, desc: "Acudiente" },
-                        { name: "estado_estudiante", type: "enum", isPK: false, isFK: false, desc: "Activo/Egresado" }
-                    ]
-                },
-                {
-                    id: "erd_matriculas",
-                    name: "MATRICULAS",
-                    schema: "colegio",
-                    fullName: "MATRICULAS",
-                    displayNameER: "MATRICULAS",
-                    displayNameUML: "MATRICULAS",
-                    color: "#E53935",
-                    posOriginal: { x: -60, y: -280, z: 0 },
-                    description: "Entidad central MATRICULAS con códigos y vínculos académicos.",
-                    columns: [
-                        { name: "id_matricula", type: "UUID [PK]", isPK: true, isFK: false, desc: "Llave primaria" },
-                        { name: "codigo_matricula", type: "string", isPK: false, isFK: false, desc: "Código único" },
-                        { name: "id_estudiante", type: "UUID [FK]", isPK: false, isFK: true, desc: "Estudiante" },
-                        { name: "id_periodo", type: "UUID [FK]", isPK: false, isFK: true, desc: "Periodo" },
-                        { name: "id_grupo", type: "UUID [FK]", isPK: false, isFK: true, desc: "Grupo" },
-                        { name: "estado_matricula", type: "enum", isPK: false, isFK: false, desc: "Matriculado/Pendiente" },
-                        { name: "observaciones", type: "string", isPK: false, isFK: false, desc: "Notas" }
-                    ]
-                },
-                {
-                    id: "erd_perfiles",
-                    name: "PERFILES",
-                    schema: "colegio",
-                    fullName: "PERFILES",
-                    displayNameER: "PERFILES",
-                    displayNameUML: "PERFILES",
-                    color: "#7B1FA2",
-                    posOriginal: { x: 420, y: -280, z: 0 },
-                    description: "Entidad PERFILES transversal a estudiantes, profesores y acudientes.",
-                    columns: [
-                        { name: "id", type: "UUID [PK]", isPK: true, isFK: false, desc: "Llave primaria" },
-                        { name: "rol", type: "enum", isPK: false, isFK: false, desc: "Rol sistema" },
-                        { name: "nombre_completo", type: "string", isPK: false, isFK: false, desc: "Nombre" },
-                        { name: "id_profesor", type: "UUID [PK/FK]", isPK: false, isFK: true, desc: "Profesor" },
-                        { name: "id_acudiente", type: "UUID [FK]", isPK: false, isFK: true, desc: "Acudiente" },
-                        { name: "id_estudiante", type: "UUID [FK]", isPK: false, isFK: true, desc: "Estudiante" }
-                    ]
-                }
+                erdEntity("ent_grados", "grados", 145, 116, 90, 42, "#1F3B5C", "#6FA8DC"),
+                erdEntity("ent_grupos", "Grupos", 372, 117, 100, 42, "#1F3B5C", "#6FA8DC"),
+                erdEntity("ent_profesores", "Profesores", 617, 118, 100, 40, "#4A2B4F", "#C27BC0"),
+                erdEntity("ent_perfiles", "Perfiles", 875, 118, 91, 40, "#1F3B5C", "#6FA8DC"),
+                erdEntity("ent_sedes", "Sedes", 152, 246, 103, 44, "#1E4A4A", "#5FB3A8"),
+                erdEntity("ent_matriculas", "Matrículas", 438, 248, 90, 40, "#1F3B5C", "#6FA8DC"),
+                erdEntity("ent_periodos", "P. Académicos", 692, 269, 105, 42, "#1F3B5C", "#6FA8DC"),
+                erdEntity("ent_estudiantes", "Estudiantes", 230, 424, 109, 42, "#1F3B5C", "#6FA8DC"),
+                erdEntity("ent_acudientes", "Acudientes", 637, 429, 125, 44, "#4A2B4F", "#C27BC0"),
+                erdEntity("ent_auth", "aut_usuarios", 871, 505, 106, 43, "#1F3B5C", "#6FA8DC"),
+
+                erdRel("rel_tienen", "Tienen", 254, 117, 76, 36),
+                erdRel("rel_dictan", "Dictan", 470, 118, 76, 36),
+                erdRel("rel_tiene_prof", "Tiene", 766, 120, 76, 36),
+                erdRel("rel_pertenece", "Pertenece", 288, 182, 100, 40),
+                erdRel("rel_contiene", "Contiene", 433, 184, 96, 40),
+                erdRel("rel_gestiona", "Gestiona", 415, 358, 88, 38),
+                erdRel("rel_asigna", "Asigna", 513, 379, 80, 38),
+                erdRel("rel_tiene_mat", "Tiene", 588, 270, 76, 36),
+                erdRel("rel_tiene_acu", "Tiene", 812, 297, 76, 36),
+                erdRel("rel_tiene_c", "Tiene", 770, 400, 76, 36),
+                erdRel("rel_tiene_perf", "Tiene", 875, 197, 76, 36),
+                erdRel("rel_accede1", "Accede", 875, 352, 88, 38),
+                erdRel("rel_accede2", "Accede", 875, 450, 88, 38),
+                erdRel("rel_representa", "Representa", 462, 434, 110, 40),
+
+                erdAttr("at_grados_1", "id_grado", 50, 86, "#BFE3FF"),
+                erdAttr("at_grados_2", "nombre_grado", 50, 114, "#BFE3FF"),
+                erdAttr("at_grados_3", "nivel_educativo", 52, 142, "#BFE3FF"),
+
+                erdAttr("at_grupos_1", "id_grupo", 298, 36, "#BFE3FF"),
+                erdAttr("at_grupos_2", "id_grado", 357, 25, "#BFE3FF"),
+                erdAttr("at_grupos_3", "nombre_grupo", 427, 33, "#BFE3FF"),
+                erdAttr("at_grupos_4", "cupo_maximo", 458, 57, "#BFE3FF"),
+                erdAttr("at_grupos_5", "id_director_grupo", 460, 82, "#BFE3FF"),
+
+                erdAttr("at_prof_1", "id_profesor", 536, 57, "#F7B6D8"),
+                erdAttr("at_prof_2", "idocumento", 558, 30, "#F7B6D8"),
+                erdAttr("at_prof_3", "nombres", 626, 30, "#F7B6D8"),
+                erdAttr("at_prof_4", "apellidos", 676, 40, "#F7B6D8"),
+                erdAttr("at_prof_5", "correo_electronico", 728, 50, "#F7B6D8"),
+                erdAttr("at_prof_6", "telefono", 700, 67, "#F7B6D8"),
+                erdAttr("at_prof_7", "estado_profesor", 718, 85, "#F7B6D8"),
+                erdAttr("at_prof_8", "created_at", 694, 94, "#F7B6D8"),
+
+                erdAttr("at_perf_1", "id", 833, 50, "#F7E38A"),
+                erdAttr("at_perf_2", "rol", 873, 47, "#F7E38A"),
+                erdAttr("at_perf_3", "n.completo", 921, 46, "#F7E38A"),
+                erdAttr("at_perf_4", "documento", 963, 57, "#F7E38A"),
+                erdAttr("at_perf_5", "apellidos", 968, 80, "#F7E38A"),
+                erdAttr("at_perf_6", "telefono", 972, 104, "#F7E38A"),
+                erdAttr("at_perf_7", "estado_profesor", 985, 125, "#F7E38A"),
+                erdAttr("at_perf_8", "created_at", 978, 150, "#F7E38A"),
+                erdAttr("at_perf_9", "rechazado", 962, 172, "#F7E38A"),
+                erdAttr("at_perf_10", "terminos_aceptados_at", 974, 196, "#F7E38A"),
+                erdAttr("at_perf_11", "terminos_version", 976, 220, "#F7E38A"),
+                erdAttr("at_perf_12", "id_profesor", 959, 252, "#F7E38A"),
+                erdAttr("at_perf_13", "id_acudiente", 969, 276, "#F7E38A"),
+                erdAttr("at_perf_14", "id_estudiante", 979, 300, "#F7E38A"),
+
+                erdAttr("at_sedes_1", "id_sede", 48, 195, "#B8F0C8"),
+                erdAttr("at_sedes_2", "nombre_sede", 60, 214, "#B8F0C8"),
+                erdAttr("at_sedes_3", "direccion", 58, 242, "#B8F0C8"),
+                erdAttr("at_sedes_4", "telefono", 60, 266, "#B8F0C8"),
+                erdAttr("at_sedes_5", "imagen_url", 58, 288, "#B8F0C8"),
+                erdAttr("at_sedes_6", "created_at", 68, 312, "#B8F0C8"),
+
+                erdAttr("at_mat_1", "id_matricula", 321, 213, "#BFE3FF"),
+                erdAttr("at_mat_2", "codigo_matricula", 316, 237, "#BFE3FF"),
+                erdAttr("at_mat_3", "id_estudiante", 330, 259, "#BFE3FF"),
+                erdAttr("at_mat_4", "id_grupo", 336, 282, "#BFE3FF"),
+                erdAttr("at_mat_5", "fecha_matricula", 330, 305, "#BFE3FF"),
+                erdAttr("at_mat_6", "motivo_estado", 330, 328, "#BFE3FF"),
+                erdAttr("at_mat_7", "id_periodo", 508, 207, "#BFE3FF"),
+                erdAttr("at_mat_8", "nombre_periodo", 513, 229, "#BFE3FF"),
+                erdAttr("at_mat_9", "fecha_inicio", 512, 251, "#BFE3FF"),
+                erdAttr("at_mat_10", "fecha_fin", 508, 273, "#BFE3FF"),
+                erdAttr("at_mat_11", "estado_matricula", 512, 296, "#BFE3FF"),
+                erdAttr("at_mat_12", "observaciones", 512, 317, "#BFE3FF"),
+                erdAttr("at_mat_13", "id_acudiente_solicitante", 535, 340, "#BFE3FF"),
+
+                erdAttr("at_per_1", "id_periodo", 610, 223, "#F7E38A"),
+                erdAttr("at_per_2", "nombre_periodo", 682, 214, "#F7E38A"),
+                erdAttr("at_per_3", "fecha_periodo", 758, 222, "#F7E38A"),
+                erdAttr("at_per_4", "tscha_fin", 806, 236, "#F7E38A"),
+                erdAttr("at_per_5", "fecha_fin", 806, 262, "#F7E38A"),
+
+                erdAttr("at_est_1", "id_estudiante", 65, 358, "#CDBBF5"),
+                erdAttr("at_est_2", "tipo_documento", 65, 383, "#CDBBF5"),
+                erdAttr("at_est_3", "documento", 62, 409, "#CDBBF5"),
+                erdAttr("at_est_4", "nombres", 66, 435, "#CDBBF5"),
+                erdAttr("at_est_5", "apellidos", 60, 460, "#CDBBF5"),
+                erdAttr("at_est_6", "fecha_nacimiento", 60, 486, "#CDBBF5"),
+                erdAttr("at_est_7", "genero", 106, 498, "#CDBBF5"),
+                erdAttr("at_est_8", "id_acudiente", 196, 500, "#CDBBF5"),
+                erdAttr("at_est_9", "fecha_registro", 276, 500, "#CDBBF5"),
+                erdAttr("at_est_10", "estado_estudiante", 362, 402, "#CDBBF5"),
+                erdAttr("at_est_11", "id_grupo", 368, 425, "#CDBBF5"),
+                erdAttr("at_est_12", "correo_electronico", 385, 453, "#CDBBF5"),
+                erdAttr("at_est_13", "parentesco", 386, 480, "#CDBBF5"),
+
+                erdAttr("at_acu_1", "id_acudiente", 537, 473, "#F7B6D8"),
+                erdAttr("at_acu_2", "tipo_documento", 528, 498, "#F7B6D8"),
+                erdAttr("at_acu_3", "documento", 520, 520, "#F7B6D8"),
+                erdAttr("at_acu_4", "nombres", 585, 517, "#F7B6D8"),
+                erdAttr("at_acu_5", "apellidos", 640, 517, "#F7B6D8"),
+                erdAttr("at_acu_6", "telefono", 683, 517, "#F7B6D8"),
+                erdAttr("at_acu_7", "created_at", 741, 517, "#F7B6D8"),
+                erdAttr("at_acu_8", "direccion", 712, 489, "#F7B6D8"),
+                erdAttr("at_acu_9", "correo_electronico", 750, 465, "#F7B6D8"),
+
+                erdAttr("at_auth_1", "email", 975, 472, "#F7E38A"),
+                erdAttr("at_auth_2", "password", 975, 498, "#F7E38A"),
+                erdAttr("at_auth_3", "created_at", 977, 523, "#F7E38A")
             ],
             relations: [
-                {
-                    id: "rel_e_sedes_grupos",
-                    fromTable: "erd_sedes",
-                    toTable: "erd_grupos",
-                    fromCol: "id_sede",
-                    toCol: "id_sede",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "tiene",
-                    color: "#9C27B0",
-                    description: "SEDES tiene GRUPOS"
-                },
-                {
-                    id: "rel_e_grados_grupos",
-                    fromTable: "erd_grados",
-                    toTable: "erd_grupos",
-                    fromCol: "id_grado",
-                    toCol: "id_grado",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "tiene",
-                    color: "#00ACC1",
-                    description: "GRADOS tiene GRUPOS"
-                },
-                {
-                    id: "rel_e_prof_grupos",
-                    fromTable: "erd_profesores",
-                    toTable: "erd_grupos",
-                    fromCol: "id_profesor",
-                    toCol: "id_director_grupo",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "tiene",
-                    color: "#1E88E5",
-                    description: "PROFESORES tiene GRUPOS"
-                },
-                {
-                    id: "rel_e_per_grupos",
-                    fromTable: "erd_periodos",
-                    toTable: "erd_grupos",
-                    fromCol: "id_periodo",
-                    toCol: "id_grupo",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "se ofrece en",
-                    multUML: "tiene",
-                    color: "#FFA000",
-                    description: "PERIODOS_ACADEMICOS tiene GRUPOS"
-                },
-                {
-                    id: "rel_e_grupos_mat",
-                    fromTable: "erd_grupos",
-                    toTable: "erd_matriculas",
-                    fromCol: "id_grupo",
-                    toCol: "id_grupo",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "tiene",
-                    color: "#E91E63",
-                    description: "GRUPOS tiene MATRICULAS"
-                },
-                {
-                    id: "rel_e_per_mat",
-                    fromTable: "erd_periodos",
-                    toTable: "erd_matriculas",
-                    fromCol: "id_periodo",
-                    toCol: "id_periodo",
-                    cardinalityPhysical: "abarca",
-                    verbERD: "abarca",
-                    verbUML: "abarca",
-                    multUML: "abarca",
-                    color: "#FFA000",
-                    description: "PERIODOS_ACADEMICOS abarca MATRICULAS"
-                },
-                {
-                    id: "rel_e_est_mat",
-                    fromTable: "erd_estudiantes",
-                    toTable: "erd_matriculas",
-                    fromCol: "id_estudiante",
-                    toCol: "id_estudiante",
-                    cardinalityPhysical: "realiza",
-                    verbERD: "realiza",
-                    verbUML: "realiza",
-                    multUML: "realiza",
-                    color: "#2E7D32",
-                    description: "ESTUDIANTES realiza MATRICULAS"
-                },
-                {
-                    id: "rel_e_est_per",
-                    fromTable: "erd_estudiantes",
-                    toTable: "erd_periodos",
-                    fromCol: "id_estudiante",
-                    toCol: "id_periodo",
-                    cardinalityPhysical: "incluido_en",
-                    verbERD: "incluido_en",
-                    verbUML: "incluido_en",
-                    multUML: "incluido_en",
-                    color: "#2E7D32",
-                    description: "ESTUDIANTES incluido_en PERIODOS_ACADEMICOS"
-                },
-                {
-                    id: "rel_e_acud_est",
-                    fromTable: "erd_acudientes",
-                    toTable: "erd_estudiantes",
-                    fromCol: "id_acudiente",
-                    toCol: "id_acudiente",
-                    cardinalityPhysical: "responsable_por",
-                    verbERD: "responsable_por",
-                    verbUML: "responsable_por",
-                    multUML: "responsable_por",
-                    color: "#00897B",
-                    description: "ACUDIENTES responsable_por ESTUDIANTES"
-                },
-                {
-                    id: "rel_e_perf_est",
-                    fromTable: "erd_perfiles",
-                    toTable: "erd_estudiantes",
-                    fromCol: "id_estudiante",
-                    toCol: "id_estudiante",
-                    cardinalityPhysical: "vinculado_a",
-                    verbERD: "vinculado_a",
-                    verbUML: "vinculado_a",
-                    multUML: "vinculado_a",
-                    color: "#7B1FA2",
-                    description: "PERFILES vinculado_a ESTUDIANTES"
-                },
-                {
-                    id: "rel_e_perf_prof",
-                    fromTable: "erd_perfiles",
-                    toTable: "erd_profesores",
-                    fromCol: "id_profesor",
-                    toCol: "id_profesor",
-                    cardinalityPhysical: "impartio_a",
-                    verbERD: "impartio_a",
-                    verbUML: "impartio_a",
-                    multUML: "impartio_a",
-                    color: "#7B1FA2",
-                    description: "PERFILES impartio_a PROFESORES"
-                },
-                {
-                    id: "rel_e_perf_mat",
-                    fromTable: "erd_perfiles",
-                    toTable: "erd_matriculas",
-                    fromCol: "id",
-                    toCol: "id_matricula",
-                    cardinalityPhysical: "tiene",
-                    verbERD: "tiene",
-                    verbUML: "tiene",
-                    multUML: "tiene",
-                    color: "#7B1FA2",
-                    description: "PERFILES tiene MATRICULAS"
-                }
+                erdLink("l_grados_tienen", "ent_grados", "rel_tienen", "#4FC3F7", "grados tienen grupos."),
+                erdLink("l_tienen_grupos", "rel_tienen", "ent_grupos", "#4FC3F7", "grados tienen grupos."),
+                erdLink("l_grupos_dictan", "ent_grupos", "rel_dictan", "#4FC3F7", "Grupos son dictados por profesores."),
+                erdLink("l_dictan_prof", "rel_dictan", "ent_profesores", "#4FC3F7", "Grupos son dictados por profesores."),
+                erdLink("l_prof_tiene", "ent_profesores", "rel_tiene_prof", "#E879B9", "Profesores tienen perfil."),
+                erdLink("l_tiene_prof_perf", "rel_tiene_prof", "ent_perfiles", "#E879B9", "Profesores tienen perfil."),
+                erdLink("l_grupos_pertenece", "ent_grupos", "rel_pertenece", "#4FC3F7", "Grupos pertenecen a sedes."),
+                erdLink("l_pertenece_sedes", "rel_pertenece", "ent_sedes", "#4FC3F7", "Grupos pertenecen a sedes."),
+                erdLink("l_grupos_contiene", "ent_grupos", "rel_contiene", "#4FC3F7", "Grupos contienen matrículas."),
+                erdLink("l_contiene_mat", "rel_contiene", "ent_matriculas", "#4FC3F7", "Grupos contienen matrículas."),
+                erdLink("l_mat_tiene", "ent_matriculas", "rel_tiene_mat", "#4FC3F7", "Matrículas tienen periodos."),
+                erdLink("l_tiene_mat_per", "rel_tiene_mat", "ent_periodos", "#4FC3F7", "Matrículas tienen periodos."),
+                erdLink("l_mat_asigna", "ent_matriculas", "rel_asigna", "#4FC3F7", "Matrículas se asignan a acudientes."),
+                erdLink("l_asigna_acu", "rel_asigna", "ent_acudientes", "#4FC3F7", "Matrículas se asignan a acudientes."),
+                erdLink("l_per_tiene", "ent_periodos", "rel_tiene_acu", "#4FC3F7", "Periodos tienen acudientes."),
+                erdLink("l_tiene_acu_acu", "rel_tiene_acu", "ent_acudientes", "#4FC3F7", "Periodos tienen acudientes."),
+                erdLink("l_tiene_c_acu", "rel_tiene_c", "ent_acudientes", "#4FC3F7", "Acudientes tienen relación."),
+                erdLink("l_tiene_c_tiene", "rel_tiene_c", "rel_tiene_acu", "#4FC3F7", "Acudientes tienen relación."),
+                erdLink("l_est_gestiona", "ent_estudiantes", "rel_gestiona", "#4FC3F7", "Estudiantes son gestionados en matrículas."),
+                erdLink("l_gestiona_mat", "rel_gestiona", "ent_matriculas", "#4FC3F7", "Estudiantes son gestionados en matrículas."),
+                erdLink("l_est_representa", "ent_estudiantes", "rel_representa", "#4FC3F7", "Acudientes representan estudiantes."),
+                erdLink("l_representa_acu", "rel_representa", "ent_acudientes", "#4FC3F7", "Acudientes representan estudiantes."),
+                erdLink("l_perf_tiene", "ent_perfiles", "rel_tiene_perf", "#F7E38A", "Perfiles tienen acceso."),
+                erdLink("l_tiene_perf_acc1", "rel_tiene_perf", "rel_accede1", "#F7E38A", "Perfiles tienen acceso."),
+                erdLink("l_acc1_acc2", "rel_accede1", "rel_accede2", "#F7E38A", "Acceso a cuentas de usuario."),
+                erdLink("l_acc2_auth", "rel_accede2", "ent_auth", "#F7E38A", "Acceso a cuentas de usuario."),
+
+                erdLink("la_grados_1", "ent_grados", "at_grados_1", "#BFE3FF", "Atributo de grados."),
+                erdLink("la_grados_2", "ent_grados", "at_grados_2", "#BFE3FF", "Atributo de grados."),
+                erdLink("la_grados_3", "ent_grados", "at_grados_3", "#BFE3FF", "Atributo de grados."),
+                erdLink("la_grupos_1", "ent_grupos", "at_grupos_1", "#BFE3FF", "Atributo de grupos."),
+                erdLink("la_grupos_2", "ent_grupos", "at_grupos_2", "#BFE3FF", "Atributo de grupos."),
+                erdLink("la_grupos_3", "ent_grupos", "at_grupos_3", "#BFE3FF", "Atributo de grupos."),
+                erdLink("la_grupos_4", "ent_grupos", "at_grupos_4", "#BFE3FF", "Atributo de grupos."),
+                erdLink("la_grupos_5", "ent_grupos", "at_grupos_5", "#BFE3FF", "Atributo de grupos."),
+                erdLink("la_prof_1", "ent_profesores", "at_prof_1", "#F7B6D8", "Atributo de profesores."),
+                erdLink("la_prof_2", "ent_profesores", "at_prof_2", "#F7B6D8", "Atributo de profesores."),
+                erdLink("la_prof_3", "ent_profesores", "at_prof_3", "#F7B6D8", "Atributo de profesores."),
+                erdLink("la_prof_4", "ent_profesores", "at_prof_4", "#F7B6D8", "Atributo de profesores."),
+                erdLink("la_prof_5", "ent_profesores", "at_prof_5", "#F7B6D8", "Atributo de profesores."),
+                erdLink("la_prof_6", "ent_profesores", "at_prof_6", "#F7B6D8", "Atributo de profesores."),
+                erdLink("la_prof_7", "ent_profesores", "at_prof_7", "#F7B6D8", "Atributo de profesores."),
+                erdLink("la_prof_8", "ent_profesores", "at_prof_8", "#F7B6D8", "Atributo de profesores."),
+                erdLink("la_perf_1", "ent_perfiles", "at_perf_1", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_2", "ent_perfiles", "at_perf_2", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_3", "ent_perfiles", "at_perf_3", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_4", "ent_perfiles", "at_perf_4", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_5", "ent_perfiles", "at_perf_5", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_6", "ent_perfiles", "at_perf_6", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_7", "ent_perfiles", "at_perf_7", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_8", "ent_perfiles", "at_perf_8", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_9", "ent_perfiles", "at_perf_9", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_10", "ent_perfiles", "at_perf_10", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_11", "ent_perfiles", "at_perf_11", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_12", "ent_perfiles", "at_perf_12", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_13", "ent_perfiles", "at_perf_13", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_perf_14", "ent_perfiles", "at_perf_14", "#F7E38A", "Atributo de perfiles."),
+                erdLink("la_sedes_1", "ent_sedes", "at_sedes_1", "#B8F0C8", "Atributo de sedes."),
+                erdLink("la_sedes_2", "ent_sedes", "at_sedes_2", "#B8F0C8", "Atributo de sedes."),
+                erdLink("la_sedes_3", "ent_sedes", "at_sedes_3", "#B8F0C8", "Atributo de sedes."),
+                erdLink("la_sedes_4", "ent_sedes", "at_sedes_4", "#B8F0C8", "Atributo de sedes."),
+                erdLink("la_sedes_5", "ent_sedes", "at_sedes_5", "#B8F0C8", "Atributo de sedes."),
+                erdLink("la_sedes_6", "ent_sedes", "at_sedes_6", "#B8F0C8", "Atributo de sedes."),
+                erdLink("la_mat_1", "ent_matriculas", "at_mat_1", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_2", "ent_matriculas", "at_mat_2", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_3", "ent_matriculas", "at_mat_3", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_4", "ent_matriculas", "at_mat_4", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_5", "ent_matriculas", "at_mat_5", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_6", "ent_matriculas", "at_mat_6", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_7", "ent_matriculas", "at_mat_7", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_8", "ent_matriculas", "at_mat_8", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_9", "ent_matriculas", "at_mat_9", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_10", "ent_matriculas", "at_mat_10", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_11", "ent_matriculas", "at_mat_11", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_12", "ent_matriculas", "at_mat_12", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_mat_13", "ent_matriculas", "at_mat_13", "#BFE3FF", "Atributo de matrículas."),
+                erdLink("la_per_1", "ent_periodos", "at_per_1", "#F7E38A", "Atributo de periodos académicos."),
+                erdLink("la_per_2", "ent_periodos", "at_per_2", "#F7E38A", "Atributo de periodos académicos."),
+                erdLink("la_per_3", "ent_periodos", "at_per_3", "#F7E38A", "Atributo de periodos académicos."),
+                erdLink("la_per_4", "ent_periodos", "at_per_4", "#F7E38A", "Atributo de periodos académicos."),
+                erdLink("la_per_5", "ent_periodos", "at_per_5", "#F7E38A", "Atributo de periodos académicos."),
+                erdLink("la_est_1", "ent_estudiantes", "at_est_1", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_2", "ent_estudiantes", "at_est_2", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_3", "ent_estudiantes", "at_est_3", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_4", "ent_estudiantes", "at_est_4", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_5", "ent_estudiantes", "at_est_5", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_6", "ent_estudiantes", "at_est_6", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_7", "ent_estudiantes", "at_est_7", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_8", "ent_estudiantes", "at_est_8", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_9", "ent_estudiantes", "at_est_9", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_10", "ent_estudiantes", "at_est_10", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_11", "ent_estudiantes", "at_est_11", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_12", "ent_estudiantes", "at_est_12", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_est_13", "ent_estudiantes", "at_est_13", "#CDBBF5", "Atributo de estudiantes."),
+                erdLink("la_acu_1", "ent_acudientes", "at_acu_1", "#F7B6D8", "Atributo de acudientes."),
+                erdLink("la_acu_2", "ent_acudientes", "at_acu_2", "#F7B6D8", "Atributo de acudientes."),
+                erdLink("la_acu_3", "ent_acudientes", "at_acu_3", "#F7B6D8", "Atributo de acudientes."),
+                erdLink("la_acu_4", "ent_acudientes", "at_acu_4", "#F7B6D8", "Atributo de acudientes."),
+                erdLink("la_acu_5", "ent_acudientes", "at_acu_5", "#F7B6D8", "Atributo de acudientes."),
+                erdLink("la_acu_6", "ent_acudientes", "at_acu_6", "#F7B6D8", "Atributo de acudientes."),
+                erdLink("la_acu_7", "ent_acudientes", "at_acu_7", "#F7B6D8", "Atributo de acudientes."),
+                erdLink("la_acu_8", "ent_acudientes", "at_acu_8", "#F7B6D8", "Atributo de acudientes."),
+                erdLink("la_acu_9", "ent_acudientes", "at_acu_9", "#F7B6D8", "Atributo de acudientes."),
+                erdLink("la_auth_1", "ent_auth", "at_auth_1", "#F7E38A", "Atributo de aut_usuarios."),
+                erdLink("la_auth_2", "ent_auth", "at_auth_2", "#F7E38A", "Atributo de aut_usuarios."),
+                erdLink("la_auth_3", "ent_auth", "at_auth_3", "#F7E38A", "Atributo de aut_usuarios.")
             ]
         }
     },
@@ -1462,6 +1411,7 @@ const PROJECT_WORKSPACES = [
         bannerText: "🔀 Diagrama de flujo de la inscripción deportiva, como en la lámina. Arrastra cualquier nodo; las flechas lo siguen.",
         data: {
             info: {
+                graph: true,
                 title: "Diagrama de flujo - Inscripción deportiva",
                 description: "Recepción, validación, subprocesos principales, evaluación y generación de resultados.",
                 schemas: ["PROCESO"],

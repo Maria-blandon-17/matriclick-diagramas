@@ -178,7 +178,7 @@ function loadWorkspace(idx) {
 
     // Crear tablas y relaciones del espacio activo
     createTables(workspace.data);
-    if (idx === 4) {
+    if (workspace.data.info && workspace.data.info.graph) {
         createFlowEdges(workspace.data);
     } else {
         createRelationships(workspace.data);
@@ -525,6 +525,8 @@ function generateShapeCanvas(tableData) {
         ? measureDbTable(tableData)
         : tableData.shape === "flow"
             ? { w: tableData.box.w * FLOW_S, h: tableData.box.h * FLOW_S }
+            : tableData.shape === "erd"
+            ? { w: tableData.box.w * ERD_S, h: tableData.box.h * ERD_S }
             : (tableData.box || { w: 220, h: 86 });
     const width = box.w;
     const height = box.h;
@@ -609,6 +611,8 @@ function generateShapeCanvas(tableData) {
             drawDbTable(ctx, tableData, w, h);
         } else if (tableData.shape === "flow") {
             drawFlowNode(ctx, w, h, tableData);
+        } else if (tableData.shape === "erd") {
+            drawErdNode(ctx, w, h, tableData);
         }
     });
     return { texture, width, height };
@@ -740,6 +744,80 @@ function createShapeMesh(tableData) {
 }
 
 // -----------------------------------------------------------------------------
+// 3d. MODELO ENTIDAD RELACIÓN (ENTIDADES, ATRIBUTOS Y RELACIONES)
+// -----------------------------------------------------------------------------
+const ERD_S = 1.3;        // escala de píxeles de la lámina a unidades 3D
+const ERD_CX = 512;       // centro de la lámina (px)
+const ERD_CY = 285.5;
+const ERD_LINE_R = 1.1;   // grosor de las líneas del ERD
+
+function drawErdNode(ctx, w, h, t) {
+    const S = ERD_S;
+    ctx.save();
+    ctx.fillStyle = t.fill;
+    ctx.strokeStyle = t.border;
+    ctx.lineWidth = 1.6 * S;
+    ctx.beginPath();
+    if (t.kind === "entity") {
+        ctx.roundRect(1.5, 1.5, w - 3, h - 3, 3 * S);
+    } else if (t.kind === "relationship") {
+        ctx.moveTo(w / 2, 1.5);
+        ctx.lineTo(w - 1.5, h / 2);
+        ctx.lineTo(w / 2, h - 1.5);
+        ctx.lineTo(1.5, h / 2);
+        ctx.closePath();
+    } else {
+        ctx.ellipse(w / 2, h / 2, w / 2 - 1.5, h / 2 - 1.5, 0, 0, Math.PI * 2);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    const isAttr = t.kind === "attribute";
+    const weight = isAttr ? "500" : "700";
+    const px = isAttr ? 11 : 14;
+    drawCenteredLines(
+        ctx,
+        t.labelLines || [t.name],
+        w / 2,
+        h / 2,
+        `${weight} ${px * S}px system-ui, Segoe UI, sans-serif`,
+        t.textColor || "#FFFFFF",
+        px * S
+    );
+}
+
+function erdRim(mesh, toward) {
+    const a = (mesh.userData.cardWidth || 100) / 2;
+    const b = (mesh.userData.cardHeight || 40) / 2;
+    const dx = toward.x - mesh.position.x;
+    const dy = toward.y - mesh.position.y;
+    const c = mesh.position;
+    if (dx === 0 && dy === 0) return new THREE.Vector3(c.x, c.y, -2);
+    const kind = mesh.userData.anchor;
+    let t;
+    if (kind === "diamond") {
+        t = 1 / (Math.abs(dx) / a + Math.abs(dy) / b);
+    } else if (kind === "ellipse") {
+        t = 1 / Math.sqrt((dx * dx) / (a * a) + (dy * dy) / (b * b));
+    } else {
+        const sx = dx === 0 ? Infinity : a / Math.abs(dx);
+        const sy = dy === 0 ? Infinity : b / Math.abs(dy);
+        t = Math.min(sx, sy);
+    }
+    return new THREE.Vector3(c.x + dx * t, c.y + dy * t, -2);
+}
+
+function buildStraightEdgeGroup(rel, fromMesh, toMesh) {
+    const a = erdRim(fromMesh, toMesh.position);
+    const b = erdRim(toMesh, fromMesh.position);
+    const group = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(rel.color) });
+    addFlowSegment(group, a, b, mat, ERD_LINE_R);
+    return group;
+}
+
+// -----------------------------------------------------------------------------
 // 3c. DIAGRAMA DE FLUJO (NODOS Y FLECHAS EN 3D, COORDENADAS DE LA LÁMINA)
 // -----------------------------------------------------------------------------
 const FLOW_S = 1.2;      // escala de píxeles de la lámina a unidades 3D
@@ -755,6 +833,7 @@ function getCameraPreset(idx) {
     if (idx === 3) return { x: 0, y: -10, z: 2050 };
     if (idx === 0) return { x: 0, y: 0, z: 2700 };
     if (idx === 4) return { x: 0, y: 0, z: 1800 };
+    if (idx === 1) return { x: 0, y: 0, z: 1600 };
     return { x: 0, y: 100, z: 1100 };
 }
 
@@ -851,6 +930,7 @@ function addFlowArrow(group, tip, dir, mat) {
 }
 
 function buildFlowEdgeGroup(rel, fromMesh, toMesh) {
+    if (rel.straight) return buildStraightEdgeGroup(rel, fromMesh, toMesh);
     const pts = [flowAnchor(fromMesh, rel.fromSide)];
     (rel.via || []).forEach(p => pts.push(new THREE.Vector3(flowX(p[0]), flowY(p[1]), -2)));
     pts.push(flowAnchor(toMesh, rel.toSide));
@@ -1144,6 +1224,10 @@ function addConnectionPorts(mesh, height) {
 }
 
 function getTablePosition(tableData, layout) {
+    if (tableData.space === "erd") {
+        const p = tableData.posOriginal;
+        return { x: (p.x - ERD_CX) * ERD_S, y: (ERD_CY - p.y) * ERD_S, z: 0 };
+    }
     if (tableData.flowPx) {
         const p = tableData.posOriginal;
         return { x: flowX(p.x), y: flowY(p.y), z: 0 };
@@ -1635,7 +1719,7 @@ function setupUIControls() {
             showToast("Vista frontal del esquema");
             return;
         }
-        flyCameraTo(0, 0, currentWorkspaceIdx === 4 ? 1800 : 1400);
+        flyCameraTo(0, 0, currentWorkspaceIdx === 4 ? 1800 : currentWorkspaceIdx === 1 ? 1600 : 1400);
         showToast("Vista Frontal Plana");
     });
 
@@ -1659,6 +1743,8 @@ function setupUIControls() {
             flyCameraTo(0, 0, 2700);
         } else if (currentWorkspaceIdx === 4) {
             flyCameraTo(0, 0, 1800);
+        } else if (currentWorkspaceIdx === 1) {
+            flyCameraTo(0, 0, 1600);
         } else {
             flyCameraTo(0, 120, 1300);
             controls.target.set(0, 0, 0);
