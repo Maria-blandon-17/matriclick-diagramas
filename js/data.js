@@ -1113,797 +1113,416 @@ const PROJECT_WORKSPACES = [
         }
     },
 
-        // -------------------------------------------------------------------------
-    // PESTAÑA 4: DIAGRAMA DE CASOS DE USO (SISTEMA MATRICLICK - IMAGEN EXACTA)
+    // -------------------------------------------------------------------------
+    // PESTAÑA 4: CASO DE USO - SISTEMA MATRICLIK (lámina de referencia)
     // -------------------------------------------------------------------------
     {
         id: "tab_casos_uso",
         name: "Casos de Uso",
-        subtitle: "Diagrama de Casos de Uso - Sistema Matriclick",
+        subtitle: "Caso de Uso - Sistema Matriclik",
         status: "active",
-        bannerText: "👥 Pestaña 4: Diagrama de Casos de Uso - Sistema Matriclick (Exacto a tu diseño con los 6 módulos: Acceso Público, Mi Cuenta, Académico, Matrículas, Administración y Comunidad). Arrastra los nodos libremente.",
+        bannerText: "👥 Caso de Uso del Sistema Matriclik: actores, óvalos y asociaciones como en la lámina. Los marcados en gris son nuevos. Arrastra cualquier nodo; las líneas lo siguen.",
         data: {
             info: {
-                title: "Diagrama de Casos de Uso - Sistema Matriclick",
-                description: "Arquitectura de Casos de Uso y Actores correspondiente fielmente a tu diseño institucional.",
-                schemas: ["ACCESO PÚBLICO", "INICIO Y MI CUENTA", "ACADÉMICO", "MATRÍCULAS", "ADMINISTRACIÓN", "COMUNIDAD"],
-                totalTables: 26,
-                totalRelations: 24
+                title: "Caso de Uso - Sistema Matriclik",
+                description: "Diagrama de casos de uso del sistema Matriclik, con actores externos, casos nuevos y la base de datos.",
+                schemas: ["ACTOR", "CASO DE USO", "NOTA", "BASE DE DATOS"],
+                totalTables: 19,
+                totalRelations: 21
+            },
+            frame: {
+                minX: -510,
+                maxX: 510,
+                minY: -590,
+                maxY: 560,
+                title: "SISTEMA MATRICLIK",
+                slideTitle: "CASO DE USO - SISTEMA MATRICLIK",
+                footer: "PROYECTO: MATRICLIK"
             },
             tables: [
-                // ==================== ACTORES ====================
                 {
-                    id: "act_visitante",
-                    name: "Visitante",
+                    id: "act_acudiente",
+                    name: "Acudiente",
                     schema: "ACTOR",
-                    fullName: "🧍 Visitante",
-                    displayNameER: "VISITANTE",
-                    displayNameUML: "Visitante",
-                    color: "#94A3B8",
-                    posOriginal: { x: -680, y: 300, z: 20 },
-                    isActor: true,
-                    description: "Usuario no autenticado que explora el portal público institucional.",
+                    fullName: "Acudiente",
+                    displayNameER: "ACUDIENTE",
+                    displayNameUML: "Acudiente",
+                    color: "#C62828",
+                    posOriginal: { x: -740, y: 430, z: 0 },
+                    shape: "actor",
+                    variant: "acudiente",
+                    anchor: "rect",
+                    box: { w: 150, h: 220 },
+                    description: "Acudiente del estudiante. Se asocia con el registro, la matrícula, la solicitud y el perfil.",
                     columns: [
-                        { name: "tipo", type: "Actor Externo", isPK: true, isFK: false, desc: "Sin credenciales" },
-                        { name: "alcance", type: "Público", isPK: false, isFK: false, desc: "Landing y Login" }
-                    ]
-                },
-                {
-                    id: "act_user_auth",
-                    name: "Usuario autenticado",
-                    schema: "ACTOR BASE",
-                    fullName: "🧍 Usuario autenticado",
-                    displayNameER: "USUARIO_AUTH",
-                    displayNameUML: "UsuarioAutenticado",
-                    color: "#64748B",
-                    posOriginal: { x: -680, y: 50, z: 20 },
-                    isActor: true,
-                    isAbstract: true,
-                    description: "Actor abstracto que agrupa los permisos comunes de todo usuario con sesión iniciada.",
-                    columns: [
-                        { name: "tipo", type: "Actor Abstracto", isPK: true, isFK: false, desc: "Heredable" },
-                        { name: "alcance", type: "Cuenta y Catálogo", isPK: false, isFK: false, desc: "Permisos base" }
-                    ]
-                },
-                {
-                    id: "act_admin",
-                    name: "Admin",
-                    schema: "ACTOR",
-                    fullName: "🧍 Admin",
-                    displayNameER: "ADMIN",
-                    displayNameUML: "Admin",
-                    color: "#F59E0B",
-                    posOriginal: { x: -480, y: -20, z: 20 },
-                    isActor: true,
-                    isGold: true,
-                    description: "Administrador con privilegios globales sobre la gestión académica y comunitaria.",
-                    columns: [
-                        { name: "tipo", type: "Administrador", isPK: true, isFK: false, desc: "Privilegios altos" },
-                        { name: "alcance", type: "Gestión Total", isPK: false, isFK: false, desc: "Sedes, Profesores, etc." }
+                        { name: "actor", type: "Externo", isPK: true, isFK: false, desc: "Acudiente" }
                     ]
                 },
                 {
                     id: "act_profesor",
                     name: "Profesor",
                     schema: "ACTOR",
-                    fullName: "🧍 Profesor",
+                    fullName: "Profesor",
                     displayNameER: "PROFESOR",
                     displayNameUML: "Profesor",
-                    color: "#94A3B8",
-                    posOriginal: { x: -480, y: -160, z: 20 },
-                    isActor: true,
-                    description: "Docente institucional que consulta sus listas de estudiantes y catálogo.",
+                    color: "#1565C0",
+                    posOriginal: { x: -740, y: 20, z: 0 },
+                    shape: "actor",
+                    variant: "profesor",
+                    anchor: "rect",
+                    box: { w: 150, h: 220 },
+                    description: "Profesor. Consulta el perfil, analiza grados, organiza la matrícula y gestiona estudiantes.",
                     columns: [
-                        { name: "tipo", type: "Docente", isPK: true, isFK: false, desc: "Gestión de clase" },
-                        { name: "alcance", type: "Estudiantes / Cursos", isPK: false, isFK: false, desc: "Consulta" }
+                        { name: "actor", type: "Externo", isPK: true, isFK: false, desc: "Profesor" }
                     ]
                 },
                 {
-                    id: "act_acudiente",
-                    name: "Acudiente",
+                    id: "act_admin",
+                    name: "Administrador",
                     schema: "ACTOR",
-                    fullName: "🧍 Acudiente",
-                    displayNameER: "ACUDIENTE",
-                    displayNameUML: "Acudiente",
-                    color: "#94A3B8",
-                    posOriginal: { x: -480, y: -300, z: 20 },
-                    isActor: true,
-                    description: "Tutor o padre de familia que radica y tramita la matrícula del menor.",
+                    fullName: "Administrador",
+                    displayNameER: "ADMINISTRADOR",
+                    displayNameUML: "Administrador",
+                    color: "#0D2C6B",
+                    posOriginal: { x: -740, y: -370, z: 0 },
+                    shape: "actor",
+                    variant: "administrador",
+                    anchor: "rect",
+                    box: { w: 150, h: 220 },
+                    description: "Administrador. Organiza la matrícula, gestiona estudiantes, almacena la información y da el visto bueno.",
                     columns: [
-                        { name: "tipo", type: "Acudiente Legal", isPK: true, isFK: false, desc: "Tutor" },
-                        { name: "alcance", type: "Matrículas Familiares", isPK: false, isFK: false, desc: "Inscripción" }
+                        { name: "actor", type: "Externo", isPK: true, isFK: false, desc: "Administrador" }
                     ]
                 },
                 {
                     id: "act_estudiante",
                     name: "Estudiante",
                     schema: "ACTOR",
-                    fullName: "🧍 Estudiante",
+                    fullName: "Estudiante",
                     displayNameER: "ESTUDIANTE",
                     displayNameUML: "Estudiante",
-                    color: "#94A3B8",
-                    posOriginal: { x: -480, y: -440, z: 20 },
-                    isActor: true,
-                    description: "Estudiante matriculado con acceso a sus matrículas y catálogo.",
+                    color: "#1976D2",
+                    posOriginal: { x: 770, y: 400, z: 0 },
+                    shape: "actor",
+                    variant: "estudiante",
+                    anchor: "rect",
+                    box: { w: 150, h: 220 },
+                    description: "Estudiante. Se registra, consulta su matrícula y participa en la gestión académica marcada en la lámina.",
                     columns: [
-                        { name: "tipo", type: "Alumno Activo", isPK: true, isFK: false, desc: "Beneficiario" },
-                        { name: "alcance", type: "Consulta Ficha", isPK: false, isFK: false, desc: "Lectura" }
-                    ]
-                },
-
-                // ==================== MÓDULO: ACCESO PÚBLICO ====================
-                {
-                    id: "cu_landing",
-                    name: "Ver landing pública",
-                    schema: "ACCESO PÚBLICO",
-                    fullName: "Ver landing pública",
-                    displayNameER: "VER_LANDING",
-                    displayNameUML: "VerLandingPublica",
-                    color: "#38BDF8",
-                    posOriginal: { x: -240, y: 340, z: 0 },
-                    isUseCase: true,
-                    description: "Visualización de la página principal informativa de la institución.",
-                    columns: [
-                        { name: "módulo", type: "ACCESO PÚBLICO", isPK: true, isFK: false, desc: "Portal web" }
+                        { name: "actor", type: "Externo", isPK: true, isFK: false, desc: "Estudiante" }
                     ]
                 },
                 {
-                    id: "cu_login",
-                    name: "Iniciar sesión",
-                    schema: "ACCESO PÚBLICO",
-                    fullName: "Iniciar sesión",
-                    displayNameER: "INICIAR_SESION",
-                    displayNameUML: "IniciarSesion",
-                    color: "#38BDF8",
-                    posOriginal: { x: 50, y: 340, z: 0 },
-                    isUseCase: true,
-                    description: "Acceso con credenciales para usuarios registrados en la institución.",
+                    id: "cu_reg",
+                    name: "Reg. Usuario, Inicio Sesion",
+                    schema: "CASO DE USO",
+                    fullName: "Reg. Usuario, Inicio Sesion",
+                    displayNameER: "REG_USUARIO_INICIO_SESION",
+                    displayNameUML: "RegUsuarioInicioSesion",
+                    color: "#2E75B6",
+                    posOriginal: { x: 0, y: 430, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    box: { w: 240, h: 86 },
+                    labelLines: ["Reg. Usuario,", "Inicio Sesion"],
+                    description: "Registro de usuario e inicio de sesión.",
                     columns: [
-                        { name: "módulo", type: "ACCESO PÚBLICO", isPK: true, isFK: false, desc: "Autenticación" }
+                        { name: "caso", type: "Uso", isPK: true, isFK: false, desc: "Acceso" }
                     ]
                 },
                 {
-                    id: "cu_registro",
-                    name: "Registrarse",
-                    schema: "ACCESO PÚBLICO",
-                    fullName: "Registrarse",
-                    displayNameER: "REGISTRARSE",
-                    displayNameUML: "Registrarse",
-                    color: "#38BDF8",
-                    posOriginal: { x: -240, y: 220, z: 0 },
-                    isUseCase: true,
-                    description: "Formulario para crear nueva cuenta en el sistema escolar.",
+                    id: "cu_mat_est",
+                    name: "Matricula Est",
+                    schema: "CASO DE USO",
+                    fullName: "Matricula Est",
+                    displayNameER: "MATRICULA_EST",
+                    displayNameUML: "MatriculaEst",
+                    color: "#2E75B6",
+                    posOriginal: { x: 0, y: 310, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    box: { w: 200, h: 74 },
+                    labelLines: ["Matricula Est"],
+                    description: "Matrícula del estudiante.",
                     columns: [
-                        { name: "módulo", type: "ACCESO PÚBLICO", isPK: true, isFK: false, desc: "Alta usuario" }
+                        { name: "caso", type: "Uso", isPK: true, isFK: false, desc: "Matrícula" }
                     ]
                 },
                 {
-                    id: "cu_vincular_auto",
-                    name: "Vincular cuenta automática",
-                    schema: "ACCESO PÚBLICO",
-                    fullName: "Vincular cuenta automática",
-                    displayNameER: "VINCULAR_CUENTA_AUTO",
-                    displayNameUML: "VincularCuentaAuto",
-                    color: "#818CF8",
-                    posOriginal: { x: 50, y: 220, z: 0 },
-                    isUseCase: true,
-                    isSpecial: true,
-                    description: "Vinculación automática con registro escolar previo (incluido en Iniciar sesión).",
+                    id: "cu_solicitud",
+                    name: "Solicitud Matricula",
+                    schema: "CASO DE USO",
+                    fullName: "Solicitud Matricula",
+                    displayNameER: "SOLICITUD_MATRICULA",
+                    displayNameUML: "SolicitudMatricula",
+                    color: "#2E75B6",
+                    posOriginal: { x: -270, y: 235, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    isNew: true,
+                    badgeSide: "left",
+                    box: { w: 190, h: 86 },
+                    labelLines: ["Solicitud", "Matricula"],
+                    description: "Caso nuevo: el acudiente radica la solicitud de matrícula.",
                     columns: [
-                        { name: "módulo", type: "ACCESO PÚBLICO", isPK: true, isFK: false, desc: "Sincronización" }
-                    ]
-                },
-
-                // ==================== MÓDULO: INICIO Y MI CUENTA ====================
-                {
-                    id: "cu_panel_inicio",
-                    name: "Ver panel de inicio",
-                    schema: "INICIO Y MI CUENTA",
-                    fullName: "Ver panel de inicio",
-                    displayNameER: "VER_PANEL_INICIO",
-                    displayNameUML: "VerPanelInicio",
-                    color: "#38BDF8",
-                    posOriginal: { x: 340, y: 340, z: 0 },
-                    isUseCase: true,
-                    description: "Dashboard principal personalizado según el rol del usuario.",
-                    columns: [
-                        { name: "módulo", type: "INICIO Y MI CUENTA", isPK: true, isFK: false, desc: "Dashboard" }
-                    ]
-                },
-                {
-                    id: "cu_logout",
-                    name: "Cerrar sesión",
-                    schema: "INICIO Y MI CUENTA",
-                    fullName: "Cerrar sesión",
-                    displayNameER: "CERRAR_SESION",
-                    displayNameUML: "CerrarSesion",
-                    color: "#38BDF8",
-                    posOriginal: { x: 600, y: 340, z: 0 },
-                    isUseCase: true,
-                    description: "Cierre seguro de la sesión activa en el navegador.",
-                    columns: [
-                        { name: "módulo", type: "INICIO Y MI CUENTA", isPK: true, isFK: false, desc: "Seguridad" }
+                        { name: "caso", type: "Nuevo", isPK: true, isFK: false, desc: "Solicitud" }
                     ]
                 },
                 {
                     id: "cu_perfil",
-                    name: "Editar mi perfil",
-                    schema: "INICIO Y MI CUENTA",
-                    fullName: "Editar mi perfil",
-                    displayNameER: "EDITAR_MI_PERFIL",
-                    displayNameUML: "EditarMiPerfil",
-                    color: "#38BDF8",
-                    posOriginal: { x: 340, y: 220, z: 0 },
-                    isUseCase: true,
-                    description: "Actualización de datos personales, teléfono y foto de perfil.",
+                    name: "Visualizar Perfil Completo",
+                    schema: "CASO DE USO",
+                    fullName: "Visualizar Perfil Completo",
+                    displayNameER: "VISUALIZAR_PERFIL_COMPLETO",
+                    displayNameUML: "VisualizarPerfilCompleto",
+                    color: "#2E75B6",
+                    posOriginal: { x: 15, y: 165, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    isNew: true,
+                    badgeSide: "left",
+                    box: { w: 230, h: 90 },
+                    labelLines: ["Visualizar Perfil", "Completo"],
+                    description: "Caso nuevo: consulta del perfil completo.",
                     columns: [
-                        { name: "módulo", type: "INICIO Y MI CUENTA", isPK: true, isFK: false, desc: "Datos personales" }
+                        { name: "caso", type: "Nuevo", isPK: true, isFK: false, desc: "Perfil" }
                     ]
                 },
                 {
-                    id: "cu_password",
-                    name: "Cambiar contraseña",
-                    schema: "INICIO Y MI CUENTA",
-                    fullName: "Cambiar contraseña",
-                    displayNameER: "CAMBIAR_PASSWORD",
-                    displayNameUML: "CambiarContraseña",
-                    color: "#38BDF8",
-                    posOriginal: { x: 600, y: 220, z: 0 },
-                    isUseCase: true,
-                    description: "Renovación periódica de la clave de acceso institucional.",
-                    columns: [
-                        { name: "módulo", type: "INICIO Y MI CUENTA", isPK: true, isFK: false, desc: "Credenciales" }
-                    ]
-                },
-
-                // ==================== MÓDULO: ACADÉMICO ====================
-                {
-                    id: "cu_ver_catalogo",
-                    name: "Ver catálogo académico",
-                    schema: "ACADÉMICO",
-                    fullName: "Ver catálogo académico",
-                    displayNameER: "VER_CATALOGO",
-                    displayNameUML: "VerCatalogoAcademico",
-                    color: "#38BDF8",
-                    posOriginal: { x: -240, y: 50, z: 0 },
-                    isUseCase: true,
-                    description: "Consulta de grados escolares, materias y plan de estudios.",
-                    columns: [
-                        { name: "módulo", type: "ACADÉMICO", isPK: true, isFK: false, desc: "Oferta académica" }
-                    ]
-                },
-                {
-                    id: "cu_gest_catalogo",
-                    name: "Gestionar catálogo académico",
-                    schema: "ACADÉMICO",
-                    fullName: "Gestionar catálogo académico",
-                    displayNameER: "GESTIONAR_CATALOGO",
-                    displayNameUML: "GestionarCatalogoAcademico",
-                    color: "#F59E0B",
-                    posOriginal: { x: -240, y: -70, z: 0 },
-                    isUseCase: true,
-                    isGold: true,
-                    description: "Creación, edición y cierre de grados y programas por parte del Admin.",
-                    columns: [
-                        { name: "módulo", type: "ACADÉMICO", isPK: true, isFK: false, desc: "Administración plan" }
-                    ]
-                },
-
-                // ==================== MÓDULO: MATRÍCULAS ====================
-                {
-                    id: "cu_ver_matriculas",
-                    name: "Ver matrículas",
-                    schema: "MATRÍCULAS",
-                    fullName: "Ver matrículas",
-                    displayNameER: "VER_MATRICULAS",
-                    displayNameUML: "VerMatriculas",
-                    color: "#38BDF8",
-                    posOriginal: { x: 340, y: 50, z: 0 },
-                    isUseCase: true,
-                    description: "Listado de matrículas registradas y seguimiento de su estado.",
-                    columns: [
-                        { name: "módulo", type: "MATRÍCULAS", isPK: true, isFK: false, desc: "Consulta matrículas" }
-                    ]
-                },
-                {
-                    id: "cu_crear_matricula",
-                    name: "Crear matrícula",
-                    schema: "MATRÍCULAS",
-                    fullName: "Crear matrícula",
-                    displayNameER: "CREAR_MATRICULA",
-                    displayNameUML: "CrearMatricula",
-                    color: "#38BDF8",
-                    posOriginal: { x: 600, y: 50, z: 0 },
-                    isUseCase: true,
-                    description: "Registro y postulación formal de una nueva matrícula escolar.",
-                    columns: [
-                        { name: "módulo", type: "MATRÍCULAS", isPK: true, isFK: false, desc: "Nueva matrícula" }
-                    ]
-                },
-                {
-                    id: "cu_cambiar_estado_mat",
-                    name: "Cambiar estado de matrícula",
-                    schema: "MATRÍCULAS",
-                    fullName: "Cambiar estado de matrícula",
-                    displayNameER: "CAMBIAR_ESTADO_MAT",
-                    displayNameUML: "CambiarEstadoMatricula",
-                    color: "#F59E0B",
-                    posOriginal: { x: 470, y: -70, z: 0 },
-                    isUseCase: true,
-                    isGold: true,
-                    description: "Aprobación, rechazo o cancelación de matrículas por el Admin.",
-                    columns: [
-                        { name: "módulo", type: "MATRÍCULAS", isPK: true, isFK: false, desc: "Estado: Activo/Retirado" }
-                    ]
-                },
-
-                // ==================== MÓDULO: ADMINISTRACIÓN ====================
-                {
-                    id: "cu_gest_sedes",
-                    name: "Gestionar sedes",
-                    schema: "ADMINISTRACIÓN",
-                    fullName: "Gestionar sedes",
-                    displayNameER: "GESTIONAR_SEDES",
-                    displayNameUML: "GestionarSedes",
-                    color: "#F59E0B",
-                    posOriginal: { x: -240, y: -220, z: 0 },
-                    isUseCase: true,
-                    isGold: true,
-                    description: "Alta, edición y configuración de planteles físicos y sedes.",
-                    columns: [
-                        { name: "módulo", type: "ADMINISTRACIÓN", isPK: true, isFK: false, desc: "Sedes escolares" }
-                    ]
-                },
-                {
-                    id: "cu_ver_reportes",
-                    name: "Ver reportes",
-                    schema: "ADMINISTRACIÓN",
-                    fullName: "Ver reportes",
-                    displayNameER: "VER_REPORTES",
-                    displayNameUML: "VerReportes",
-                    color: "#F59E0B",
-                    posOriginal: { x: -240, y: -330, z: 0 },
-                    isUseCase: true,
-                    isGold: true,
-                    description: "Estadísticas, métricas de cupos y reportes institucionales.",
-                    columns: [
-                        { name: "módulo", type: "ADMINISTRACIÓN", isPK: true, isFK: false, desc: "Métricas y PDF" }
-                    ]
-                },
-
-                // ==================== MÓDULO: COMUNIDAD ====================
-                {
-                    id: "cu_gest_profesores",
-                    name: "Gestionar profesores",
-                    schema: "COMUNIDAD",
-                    fullName: "Gestionar profesores",
+                    id: "cu_gest_prof",
+                    name: "Gestionar Profesores",
+                    schema: "CASO DE USO",
+                    fullName: "Gestionar Profesores",
                     displayNameER: "GESTIONAR_PROFESORES",
                     displayNameUML: "GestionarProfesores",
-                    color: "#F59E0B",
-                    posOriginal: { x: 340, y: -220, z: 0 },
-                    isUseCase: true,
-                    isGold: true,
-                    description: "Directorio docente, asignación y contratos de profesores.",
+                    color: "#2E75B6",
+                    posOriginal: { x: 280, y: 250, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    isNew: true,
+                    badgeSide: "right",
+                    box: { w: 190, h: 86 },
+                    labelLines: ["Gestionar", "Profesores"],
+                    description: "Caso nuevo: gestión de profesores.",
                     columns: [
-                        { name: "módulo", type: "COMUNIDAD", isPK: true, isFK: false, desc: "Docentes" }
+                        { name: "caso", type: "Nuevo", isPK: true, isFK: false, desc: "Profesores" }
                     ]
                 },
                 {
-                    id: "cu_gest_acudientes",
-                    name: "Gestionar acudientes",
-                    schema: "COMUNIDAD",
-                    fullName: "Gestionar acudientes",
-                    displayNameER: "GESTIONAR_ACUDIENTES",
-                    displayNameUML: "GestionarAcudientes",
-                    color: "#F59E0B",
-                    posOriginal: { x: 600, y: -220, z: 0 },
-                    isUseCase: true,
-                    isGold: true,
-                    description: "Registro y control de padres de familia y acudientes legales.",
+                    id: "cu_analiza",
+                    name: "Analiza Grados",
+                    schema: "CASO DE USO",
+                    fullName: "Analiza Grados",
+                    displayNameER: "ANALIZA_GRADOS",
+                    displayNameUML: "AnalizaGrados",
+                    color: "#2E75B6",
+                    posOriginal: { x: 0, y: 40, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    box: { w: 200, h: 74 },
+                    labelLines: ["Analiza Grados"],
+                    description: "Análisis de los grados escolares.",
                     columns: [
-                        { name: "módulo", type: "COMUNIDAD", isPK: true, isFK: false, desc: "Padres / Tutores" }
+                        { name: "caso", type: "Uso", isPK: true, isFK: false, desc: "Grados" }
                     ]
                 },
                 {
-                    id: "cu_gest_estudiantes",
-                    name: "Gestionar estudiantes",
-                    schema: "COMUNIDAD",
-                    fullName: "Gestionar estudiantes",
+                    id: "cu_director",
+                    name: "Asignar Director de Grupo",
+                    schema: "CASO DE USO",
+                    fullName: "Asignar Director de Grupo",
+                    displayNameER: "ASIGNAR_DIRECTOR_DE_GRUPO",
+                    displayNameUML: "AsignarDirectorDeGrupo",
+                    color: "#2E75B6",
+                    posOriginal: { x: 285, y: 45, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    isNew: true,
+                    badgeSide: "right",
+                    box: { w: 210, h: 90 },
+                    labelLines: ["Asignar", "Director de Grupo"],
+                    description: "Caso nuevo: asignación del director de grupo.",
+                    columns: [
+                        { name: "caso", type: "Nuevo", isPK: true, isFK: false, desc: "Director" }
+                    ]
+                },
+                {
+                    id: "cu_gest_org",
+                    name: "Gestiona org., Crea matric.",
+                    schema: "CASO DE USO",
+                    fullName: "Gestiona org., Crea matric.",
+                    displayNameER: "GESTIONA_ORG_CREA_MATRIC",
+                    displayNameUML: "GestionaOrgCreaMatric",
+                    color: "#2E75B6",
+                    posOriginal: { x: -30, y: -100, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    box: { w: 220, h: 86 },
+                    labelLines: ["Gestiona org.,", "Crea matric."],
+                    description: "Organización académica y creación de la matrícula.",
+                    columns: [
+                        { name: "caso", type: "Uso", isPK: true, isFK: false, desc: "Organización" }
+                    ]
+                },
+                {
+                    id: "cu_periodos",
+                    name: "Gestionar Periodos Académicos",
+                    schema: "CASO DE USO",
+                    fullName: "Gestionar Periodos Académicos",
+                    displayNameER: "GESTIONAR_PERIODOS_ACADEMICOS",
+                    displayNameUML: "GestionarPeriodosAcademicos",
+                    color: "#2E75B6",
+                    posOriginal: { x: 275, y: -95, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    isNew: true,
+                    badgeSide: "both",
+                    box: { w: 230, h: 90 },
+                    labelLines: ["Gestionar Periodos", "Académicos"],
+                    description: "Caso nuevo: gestión de periodos académicos.",
+                    columns: [
+                        { name: "caso", type: "Nuevo", isPK: true, isFK: false, desc: "Periodos" }
+                    ]
+                },
+                {
+                    id: "cu_gest_est",
+                    name: "Gestionar Estudiantes",
+                    schema: "CASO DE USO",
+                    fullName: "Gestionar Estudiantes",
                     displayNameER: "GESTIONAR_ESTUDIANTES",
                     displayNameUML: "GestionarEstudiantes",
-                    color: "#F59E0B",
-                    posOriginal: { x: 340, y: -330, z: 0 },
-                    isUseCase: true,
-                    isGold: true,
-                    description: "Padrón general del alumnado registrado en la institución.",
+                    color: "#2E75B6",
+                    posOriginal: { x: -15, y: -230, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    box: { w: 210, h: 86 },
+                    labelLines: ["Gestionar", "Estudiantes"],
+                    description: "Gestión del padrón de estudiantes.",
                     columns: [
-                        { name: "módulo", type: "COMUNIDAD", isPK: true, isFK: false, desc: "Alumnos" }
+                        { name: "caso", type: "Uso", isPK: true, isFK: false, desc: "Estudiantes" }
                     ]
                 },
                 {
-                    id: "cu_consultar_estudiantes",
-                    name: "Consultar estudiantes",
-                    schema: "COMUNIDAD",
-                    fullName: "Consultar estudiantes",
-                    displayNameER: "CONSULTAR_ESTUDIANTES",
-                    displayNameUML: "ConsultarEstudiantes",
-                    color: "#38BDF8",
-                    posOriginal: { x: 600, y: -330, z: 0 },
-                    isUseCase: true,
-                    description: "Consulta de fichas de estudiantes por parte del cuerpo docente.",
+                    id: "cu_almacena",
+                    name: "Almacena (Guarda Info)",
+                    schema: "CASO DE USO",
+                    fullName: "Almacena (Guarda Info)",
+                    displayNameER: "ALMACENA_GUARDA_INFO",
+                    displayNameUML: "AlmacenaGuardaInfo",
+                    color: "#2E75B6",
+                    posOriginal: { x: -70, y: -360, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    box: { w: 200, h: 86 },
+                    labelLines: ["Almacena", "(Guarda Info)"],
+                    description: "Almacenamiento de la información en la base de datos.",
                     columns: [
-                        { name: "módulo", type: "COMUNIDAD", isPK: true, isFK: false, desc: "Búsqueda docente" }
+                        { name: "caso", type: "Uso", isPK: true, isFK: false, desc: "Persistencia" }
                     ]
                 },
                 {
-                    id: "cu_vincular_registro",
-                    name: "Vincular cuenta a registro",
-                    schema: "COMUNIDAD",
-                    fullName: "Vincular cuenta a registro",
-                    displayNameER: "VINCULAR_CUENTA_REGISTRO",
-                    displayNameUML: "VincularCuentaRegistro",
-                    color: "#F59E0B",
-                    posOriginal: { x: 470, y: -440, z: 0 },
-                    isUseCase: true,
-                    isGold: true,
-                    description: "Asociación manual de cuentas auth con registros preexistentes.",
+                    id: "cu_dots",
+                    name: "(............)",
+                    schema: "CASO DE USO",
+                    fullName: "(............)",
+                    displayNameER: "OTRAS_FUNCIONES",
+                    displayNameUML: "OtrasFunciones",
+                    color: "#2E75B6",
+                    posOriginal: { x: 185, y: -350, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    dotted: true,
+                    box: { w: 170, h: 64 },
+                    labelLines: ["(............)"],
+                    description: "Otras funciones del sistema, enlazadas con la base de datos.",
                     columns: [
-                        { name: "módulo", type: "COMUNIDAD", isPK: true, isFK: false, desc: "Vinculación" }
+                        { name: "caso", type: "Uso", isPK: true, isFK: false, desc: "Otras funciones" }
+                    ]
+                },
+                {
+                    id: "cu_visto",
+                    name: "Da visto bueno Acepta Mat.",
+                    schema: "CASO DE USO",
+                    fullName: "Da visto bueno Acepta Mat.",
+                    displayNameER: "DA_VISTO_BUENO_ACEPTA_MAT",
+                    displayNameUML: "DaVistoBuenoAceptaMat",
+                    color: "#2E75B6",
+                    posOriginal: { x: -70, y: -485, z: 0 },
+                    shape: "usecase",
+                    anchor: "ellipse",
+                    box: { w: 220, h: 86 },
+                    labelLines: ["Da visto bueno", "Acepta Mat."],
+                    description: "Visto bueno y aceptación de la matrícula.",
+                    columns: [
+                        { name: "caso", type: "Uso", isPK: true, isFK: false, desc: "Aceptación" }
+                    ]
+                },
+                {
+                    id: "nota_otras",
+                    name: "Other System Functions",
+                    schema: "NOTA",
+                    fullName: "Other System Functions",
+                    displayNameER: "OTRAS_FUNCIONES_ESQUEMA",
+                    displayNameUML: "OtrasFuncionesEsquema",
+                    color: "#1A1A1A",
+                    posOriginal: { x: 230, y: -495, z: 0 },
+                    shape: "note",
+                    anchor: "rect",
+                    box: { w: 280, h: 150 },
+                    labelLines: [
+                        "Other System Functions",
+                        "(as per DB Schema):",
+                        "• Validación de Términos",
+                        "• Asignación de Roles",
+                        "• Control de Cupos"
+                    ],
+                    description: "Funciones adicionales tomadas del esquema de base de datos: validación de términos, asignación de roles y control de cupos.",
+                    columns: [
+                        { name: "nota", type: "Texto", isPK: true, isFK: false, desc: "Funciones del esquema" }
+                    ]
+                },
+                {
+                    id: "nodo_bd",
+                    name: "BD",
+                    schema: "BASE DE DATOS",
+                    fullName: "Base de Datos Matriclik",
+                    displayNameER: "BD_MATRICLIK",
+                    displayNameUML: "BaseDeDatosMatriclik",
+                    color: "#1E5AA8",
+                    posOriginal: { x: 780, y: -270, z: 0 },
+                    shape: "database",
+                    anchor: "ellipse",
+                    box: { w: 150, h: 130 },
+                    captionAbove: "Base de Datos\nMatriclik",
+                    captionBelow: "(auth_usuarios, perfiles,\nestudiantes, acudientes,\nprofesores, matriculas,\ngrupos, grados, sedes,\nperiodos_academicos)",
+                    description: "Base de datos Matriclik. Guarda usuarios, perfiles, estudiantes, acudientes, profesores, matrículas, grupos, grados, sedes y periodos académicos.",
+                    columns: [
+                        { name: "almacen", type: "PostgreSQL", isPK: true, isFK: false, desc: "Esquemas auth y colegio" }
                     ]
                 }
             ],
             relations: [
-                // Generalización de Actores -> Usuario autenticado
-                {
-                    id: "rel_gen_admin",
-                    fromTable: "act_admin",
-                    toTable: "act_user_auth",
-                    fromCol: "tipo",
-                    toCol: "tipo",
-                    cardinalityPhysical: "generaliza",
-                    verbERD: "hereda_de",
-                    verbUML: "△ generaliza",
-                    multUML: "△",
-                    color: "#64748B",
-                    description: "Admin hereda todas las funciones de Usuario autenticado."
-                },
-                {
-                    id: "rel_gen_profesor",
-                    fromTable: "act_profesor",
-                    toTable: "act_user_auth",
-                    fromCol: "tipo",
-                    toCol: "tipo",
-                    cardinalityPhysical: "generaliza",
-                    verbERD: "hereda_de",
-                    verbUML: "△ generaliza",
-                    multUML: "△",
-                    color: "#64748B",
-                    description: "Profesor hereda todas las funciones de Usuario autenticado."
-                },
-                {
-                    id: "rel_gen_acudiente",
-                    fromTable: "act_acudiente",
-                    toTable: "act_user_auth",
-                    fromCol: "tipo",
-                    toCol: "tipo",
-                    cardinalityPhysical: "generaliza",
-                    verbERD: "hereda_de",
-                    verbUML: "△ generaliza",
-                    multUML: "△",
-                    color: "#64748B",
-                    description: "Acudiente hereda todas las funciones de Usuario autenticado."
-                },
-                {
-                    id: "rel_gen_estudiante",
-                    fromTable: "act_estudiante",
-                    toTable: "act_user_auth",
-                    fromCol: "tipo",
-                    toCol: "tipo",
-                    cardinalityPhysical: "generaliza",
-                    verbERD: "hereda_de",
-                    verbUML: "△ generaliza",
-                    multUML: "△",
-                    color: "#64748B",
-                    description: "Estudiante hereda todas las funciones de Usuario autenticado."
-                },
-
-                // Asociaciones: Visitante
-                {
-                    id: "rel_vis_landing",
-                    fromTable: "act_visitante",
-                    toTable: "cu_landing",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "asocia",
-                    verbERD: "accede",
-                    verbUML: "asocia",
-                    multUML: "—",
-                    color: "#94A3B8",
-                    description: "Visitante accede a Ver landing pública."
-                },
-                {
-                    id: "rel_vis_login",
-                    fromTable: "act_visitante",
-                    toTable: "cu_login",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "asocia",
-                    verbERD: "inicia",
-                    verbUML: "asocia",
-                    multUML: "—",
-                    color: "#94A3B8",
-                    description: "Visitante accede a Iniciar sesión."
-                },
-                {
-                    id: "rel_vis_registro",
-                    fromTable: "act_visitante",
-                    toTable: "cu_registro",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "asocia",
-                    verbERD: "crea_cuenta",
-                    verbUML: "asocia",
-                    multUML: "—",
-                    color: "#94A3B8",
-                    description: "Visitante accede a Registrarse."
-                },
-
-                // Asociaciones: Usuario autenticado (comunes a todos)
-                {
-                    id: "rel_auth_panel",
-                    fromTable: "act_user_auth",
-                    toTable: "cu_panel_inicio",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "asocia",
-                    verbERD: "visualiza",
-                    verbUML: "asocia",
-                    multUML: "—",
-                    color: "#64748B",
-                    description: "Todo Usuario autenticado puede Ver panel de inicio."
-                },
-                {
-                    id: "rel_auth_logout",
-                    fromTable: "act_user_auth",
-                    toTable: "cu_logout",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "asocia",
-                    verbERD: "cierra",
-                    verbUML: "asocia",
-                    multUML: "—",
-                    color: "#64748B",
-                    description: "Todo Usuario autenticado puede Cerrar sesión."
-                },
-                {
-                    id: "rel_auth_perfil",
-                    fromTable: "act_user_auth",
-                    toTable: "cu_perfil",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "asocia",
-                    verbERD: "modifica",
-                    verbUML: "asocia",
-                    multUML: "—",
-                    color: "#64748B",
-                    description: "Todo Usuario autenticado puede Editar mi perfil."
-                },
-                {
-                    id: "rel_auth_pass",
-                    fromTable: "act_user_auth",
-                    toTable: "cu_password",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "asocia",
-                    verbERD: "actualiza",
-                    verbUML: "asocia",
-                    multUML: "—",
-                    color: "#64748B",
-                    description: "Todo Usuario autenticado puede Cambiar contraseña."
-                },
-                {
-                    id: "rel_auth_cat",
-                    fromTable: "act_user_auth",
-                    toTable: "cu_ver_catalogo",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "asocia",
-                    verbERD: "consulta",
-                    verbUML: "asocia",
-                    multUML: "—",
-                    color: "#64748B",
-                    description: "Todo Usuario autenticado puede Ver catálogo académico."
-                },
-                {
-                    id: "rel_auth_mat",
-                    fromTable: "act_user_auth",
-                    toTable: "cu_ver_matriculas",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "asocia",
-                    verbERD: "consulta",
-                    verbUML: "asocia",
-                    multUML: "—",
-                    color: "#64748B",
-                    description: "Todo Usuario autenticado puede Ver matrículas."
-                },
-
-                // Asociaciones: Admin (Líneas Doradas)
-                {
-                    id: "rel_adm_gest_cat",
-                    fromTable: "act_admin",
-                    toTable: "cu_gest_catalogo",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "gestiona",
-                    verbERD: "gestiona",
-                    verbUML: "gestiona",
-                    multUML: "—",
-                    color: "#F59E0B",
-                    description: "Admin gestiona el catálogo académico."
-                },
-                {
-                    id: "rel_adm_crear_mat",
-                    fromTable: "act_admin",
-                    toTable: "cu_crear_matricula",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "crea",
-                    verbERD: "crea",
-                    verbUML: "crea",
-                    multUML: "—",
-                    color: "#F59E0B",
-                    description: "Admin puede Crear matrícula."
-                },
-                {
-                    id: "rel_adm_camb_mat",
-                    fromTable: "act_admin",
-                    toTable: "cu_cambiar_estado_mat",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "aprueba",
-                    verbERD: "cambia_estado",
-                    verbUML: "modifica",
-                    multUML: "—",
-                    color: "#F59E0B",
-                    description: "Admin puede Cambiar estado de matrícula."
-                },
-                {
-                    id: "rel_adm_sedes",
-                    fromTable: "act_admin",
-                    toTable: "cu_gest_sedes",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "gestiona",
-                    verbERD: "administra",
-                    verbUML: "gestiona",
-                    multUML: "—",
-                    color: "#F59E0B",
-                    description: "Admin puede Gestionar sedes."
-                },
-                {
-                    id: "rel_adm_rep",
-                    fromTable: "act_admin",
-                    toTable: "cu_ver_reportes",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "consulta",
-                    verbERD: "revisa",
-                    verbUML: "consulta",
-                    multUML: "—",
-                    color: "#F59E0B",
-                    description: "Admin puede Ver reportes."
-                },
-                {
-                    id: "rel_adm_prof",
-                    fromTable: "act_admin",
-                    toTable: "cu_gest_profesores",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "gestiona",
-                    verbERD: "administra",
-                    verbUML: "gestiona",
-                    multUML: "—",
-                    color: "#F59E0B",
-                    description: "Admin puede Gestionar profesores."
-                },
-                {
-                    id: "rel_adm_acud",
-                    fromTable: "act_admin",
-                    toTable: "cu_gest_acudientes",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "gestiona",
-                    verbERD: "administra",
-                    verbUML: "gestiona",
-                    multUML: "—",
-                    color: "#F59E0B",
-                    description: "Admin puede Gestionar acudientes."
-                },
-                {
-                    id: "rel_adm_est",
-                    fromTable: "act_admin",
-                    toTable: "cu_gest_estudiantes",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "gestiona",
-                    verbERD: "administra",
-                    verbUML: "gestiona",
-                    multUML: "—",
-                    color: "#F59E0B",
-                    description: "Admin puede Gestionar estudiantes."
-                },
-                {
-                    id: "rel_adm_vinc_reg",
-                    fromTable: "act_admin",
-                    toTable: "cu_vincular_registro",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "vincula",
-                    verbERD: "asocia_registro",
-                    verbUML: "vincula",
-                    multUML: "—",
-                    color: "#F59E0B",
-                    description: "Admin puede Vincular cuenta a registro."
-                },
-
-                // Asociaciones: Profesor
-                {
-                    id: "rel_prof_consultar",
-                    fromTable: "act_profesor",
-                    toTable: "cu_consultar_estudiantes",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "consulta",
-                    verbERD: "consulta",
-                    verbUML: "consulta",
-                    multUML: "—",
-                    color: "#94A3B8",
-                    description: "Profesor puede Consultar estudiantes."
-                },
-
-                // Asociaciones: Acudiente
-                {
-                    id: "rel_acud_crear_mat",
-                    fromTable: "act_acudiente",
-                    toTable: "cu_crear_matricula",
-                    fromCol: "tipo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "solicita",
-                    verbERD: "solicita_matricula",
-                    verbUML: "crea",
-                    multUML: "—",
-                    color: "#94A3B8",
-                    description: "Acudiente puede Crear matrícula."
-                },
-
-                // Relaciones Internas de Casos de Uso
-                {
-                    id: "rel_reg_vinc_auto",
-                    fromTable: "cu_registro",
-                    toTable: "cu_vincular_auto",
-                    fromCol: "módulo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "asocia",
-                    verbERD: "activa",
-                    verbUML: "—",
-                    multUML: "—",
-                    color: "#818CF8",
-                    description: "Registrarse activa Vincular cuenta automática."
-                },
-                {
-                    id: "rel_inc_vinc_login",
-                    fromTable: "cu_vincular_auto",
-                    toTable: "cu_login",
-                    fromCol: "módulo",
-                    toCol: "módulo",
-                    cardinalityPhysical: "include",
-                    verbERD: "«include»",
-                    verbUML: "«include»",
-                    multUML: "«include»",
-                    color: "#818CF8",
-                    description: "Vincular cuenta automática incluye Iniciar sesión."
-                }
+                { id: "rel_acu_reg", fromTable: "act_acudiente", toTable: "cu_reg", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Acudiente se asocia con Reg. Usuario, Inicio Sesion." },
+                { id: "rel_acu_mat", fromTable: "act_acudiente", toTable: "cu_mat_est", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Acudiente se asocia con Matricula Est." },
+                { id: "rel_acu_sol", fromTable: "act_acudiente", toTable: "cu_solicitud", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Acudiente se asocia con Solicitud Matricula." },
+                { id: "rel_acu_per", fromTable: "act_acudiente", toTable: "cu_perfil", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Acudiente se asocia con Visualizar Perfil Completo." },
+                { id: "rel_pro_per", fromTable: "act_profesor", toTable: "cu_perfil", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Profesor se asocia con Visualizar Perfil Completo." },
+                { id: "rel_pro_ana", fromTable: "act_profesor", toTable: "cu_analiza", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Profesor se asocia con Analiza Grados." },
+                { id: "rel_pro_org", fromTable: "act_profesor", toTable: "cu_gest_org", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Profesor se asocia con Gestiona org., Crea matric." },
+                { id: "rel_pro_est", fromTable: "act_profesor", toTable: "cu_gest_est", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Profesor se asocia con Gestionar Estudiantes." },
+                { id: "rel_pro_dir", fromTable: "act_profesor", toTable: "cu_director", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Profesor se asocia con Asignar Director de Grupo." },
+                { id: "rel_adm_org", fromTable: "act_admin", toTable: "cu_gest_org", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Administrador se asocia con Gestiona org., Crea matric." },
+                { id: "rel_adm_est", fromTable: "act_admin", toTable: "cu_gest_est", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Administrador se asocia con Gestionar Estudiantes." },
+                { id: "rel_adm_alm", fromTable: "act_admin", toTable: "cu_almacena", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Administrador se asocia con Almacena (Guarda Info)." },
+                { id: "rel_adm_vis", fromTable: "act_admin", toTable: "cu_visto", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Administrador se asocia con Da visto bueno Acepta Mat." },
+                { id: "rel_est_reg", fromTable: "act_estudiante", toTable: "cu_reg", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Estudiante se asocia con Reg. Usuario, Inicio Sesion." },
+                { id: "rel_est_mat", fromTable: "act_estudiante", toTable: "cu_mat_est", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Estudiante se asocia con Matricula Est." },
+                { id: "rel_est_gpr", fromTable: "act_estudiante", toTable: "cu_gest_prof", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Estudiante se asocia con Gestionar Profesores." },
+                { id: "rel_est_dir", fromTable: "act_estudiante", toTable: "cu_director", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Estudiante se asocia con Asignar Director de Grupo." },
+                { id: "rel_est_ana", fromTable: "act_estudiante", toTable: "cu_analiza", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Estudiante se asocia con Analiza Grados." },
+                { id: "rel_est_per", fromTable: "act_estudiante", toTable: "cu_periodos", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Estudiante se asocia con Gestionar Periodos Académicos." },
+                { id: "rel_alm_bd", fromTable: "cu_almacena", toTable: "nodo_bd", fromCol: "caso", toCol: "almacen", cardinalityPhysical: "guarda", verbERD: "guarda", verbUML: "guarda", multUML: "—", color: "#2E75B6", flat: true, description: "Almacena (Guarda Info) persiste en la base de datos Matriclik." },
+                { id: "rel_dot_bd", fromTable: "cu_dots", toTable: "nodo_bd", fromCol: "caso", toCol: "almacen", cardinalityPhysical: "guarda", verbERD: "guarda", verbUML: "guarda", multUML: "—", color: "#2E75B6", flat: true, description: "Las demás funciones se apoyan en la base de datos Matriclik." }
             ]
         }
     }

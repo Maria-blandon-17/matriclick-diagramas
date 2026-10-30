@@ -19,3 +19,5 @@ node_modules/
 *.db
 # Excepto la BD de ejemplo que usan las funciones serverless en Vercel
 !matriclick.db
+.vercel
+.env*

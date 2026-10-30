@@ -40,8 +40,13 @@ let hoveredTable = null;
 let selectedTable = null;
 let currentMode = "physical"; // 'physical' | 'erd' | 'uml'
 let currentLayout = "original"; // 'original' | 'layered' | 'orbital'
-let currentWorkspaceIdx = 0; // 0: Diagrama 1, 1: Diagrama 2, 2: Diagrama 3
+let currentWorkspaceIdx = 0; // 0: Diagrama 1, 1: Diagrama 2, 2: Diagrama 3, 3: Casos de Uso
 let isAutoRotating = false;
+let gridHelper = null;
+let ambientDust = null;
+let useCaseExtras = [];
+let useCaseBgTexture = null;
+const SCENE_BG = 0x070b14;
 
 // Variables para arrastre libre de tablas en 3D
 let isMouseDown = false;
@@ -76,8 +81,8 @@ function initScene() {
 
     // Escena principal
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x070b14);
-    scene.fog = new THREE.FogExp2(0x070b14, 0.00035);
+    scene.background = new THREE.Color(SCENE_BG);
+    scene.fog = new THREE.FogExp2(SCENE_BG, 0.00035);
 
     // Cámara con ángulo amplio y profundidad
     camera = new THREE.PerspectiveCamera(50, width / height, 10, 15000);
@@ -113,7 +118,7 @@ function initScene() {
     scene.add(dirLight2);
 
     // Rejilla de fondo estilo Cyber-Grid
-    const gridHelper = new THREE.GridHelper(3000, 60, 0x00d2ff, 0x162447);
+    gridHelper = new THREE.GridHelper(3000, 60, 0x00d2ff, 0x162447);
     gridHelper.position.y = -500;
     scene.add(gridHelper);
 
@@ -164,9 +169,16 @@ function loadWorkspace(idx) {
     hoveredTable = null;
     document.getElementById("sidebar-panel")?.classList.remove("open");
 
+    restoreDefaultAtmosphere();
+
     // Crear tablas y relaciones del espacio activo
     createTables(workspace.data);
     createRelationships(workspace.data);
+
+    if (idx === 3) {
+        applyUseCaseAtmosphere();
+        buildUseCaseFrame(workspace.data.frame);
+    }
 
     // Actualizar UI del banner y badge
     const badge = document.getElementById("active-diagram-badge");
@@ -185,7 +197,7 @@ function loadWorkspace(idx) {
     }
 
     // Centrar suavemente la cámara en el nuevo diagrama
-    flyCameraTo(0, 100, (idx === 0) ? 1300 : 1100);
+    flyCameraTo(0, idx === 3 ? -10 : 100, idx === 3 ? 2050 : (idx === 0 ? 1300 : 1100));
 
     showToast(`Pestaña activa: ${workspace.name}`);
 }
@@ -298,10 +310,435 @@ function generateTableCanvas(tableData, mode) {
 }
 
 // -----------------------------------------------------------------------------
+// 3b. FORMAS DEL DIAGRAMA DE CASOS DE USO (ÓVALOS, ACTORES, BD)
+// -----------------------------------------------------------------------------
+function makeCanvasTexture(width, height, draw) {
+    const scale = 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(2, Math.round(width * scale));
+    canvas.height = Math.max(2, Math.round(height * scale));
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+    ctx.clearRect(0, 0, width, height);
+    draw(ctx, width, height);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.needsUpdate = true;
+    return texture;
+}
+
+function drawCenteredLines(ctx, lines, cx, cy, font, color, lineGap) {
+    ctx.fillStyle = color;
+    ctx.font = font;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const gap = lineGap || 20;
+    const start = cy - ((lines.length - 1) * gap) / 2;
+    lines.forEach((line, i) => ctx.fillText(line, cx, start + i * gap));
+}
+
+function drawActorFigure(ctx, w, h, variant) {
+    const cx = w / 2;
+    const headY = 52;
+    const headR = 24;
+
+    ctx.fillStyle = "#2a211c";
+    ctx.beginPath();
+    ctx.arc(cx, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#f2c2a0";
+    ctx.beginPath();
+    ctx.arc(cx, headY + 3, headR - 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (variant === "acudiente") {
+        ctx.fillStyle = "#1a1a1a";
+        ctx.beginPath();
+        ctx.arc(cx, headY - 2, headR, Math.PI * 1.02, Math.PI * 1.98);
+        ctx.fill();
+        ctx.fillRect(cx - headR - 1, headY - 2, 11, 42);
+        ctx.fillRect(cx + headR - 10, headY - 2, 11, 46);
+        ctx.fillStyle = "#f2c2a0";
+        ctx.beginPath();
+        ctx.ellipse(cx, headY + 6, 15, 17, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else {
+        ctx.fillStyle = "#2a211c";
+        ctx.beginPath();
+        ctx.arc(cx, headY - 4, headR - 1, Math.PI * 1.08, Math.PI * 1.92);
+        ctx.fill();
+    }
+
+    ctx.fillStyle = "#3a2a22";
+    ctx.beginPath();
+    ctx.arc(cx - 6, headY + 2, 1.6, 0, Math.PI * 2);
+    ctx.arc(cx + 6, headY + 2, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+
+    const neck = headY + headR + 2;
+    if (variant === "acudiente") {
+        ctx.fillStyle = "#c62828";
+        ctx.beginPath();
+        ctx.moveTo(cx - 28, neck + 52);
+        ctx.quadraticCurveTo(cx - 32, neck + 8, cx, neck);
+        ctx.quadraticCurveTo(cx + 32, neck + 8, cx + 28, neck + 52);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#263238";
+        ctx.fillRect(cx - 22, neck + 48, 44, 28);
+    } else if (variant === "estudiante") {
+        ctx.fillStyle = "#1565c0";
+        ctx.beginPath();
+        ctx.moveTo(cx - 30, neck + 48);
+        ctx.quadraticCurveTo(cx - 34, neck + 6, cx, neck);
+        ctx.quadraticCurveTo(cx + 34, neck + 6, cx + 30, neck + 48);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#37474f";
+        ctx.fillRect(cx - 16, neck + 46, 14, 32);
+        ctx.fillRect(cx + 2, neck + 46, 14, 32);
+    } else {
+        const suit = variant === "administrador" ? "#0d2c6b" : "#1565c0";
+        ctx.fillStyle = suit;
+        ctx.beginPath();
+        ctx.moveTo(cx - 32, neck + 56);
+        ctx.lineTo(cx - 26, neck + 8);
+        ctx.lineTo(cx, neck + 2);
+        ctx.lineTo(cx + 26, neck + 8);
+        ctx.lineTo(cx + 32, neck + 56);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#f7f7f7";
+        ctx.beginPath();
+        ctx.moveTo(cx - 8, neck + 6);
+        ctx.lineTo(cx, neck + 28);
+        ctx.lineTo(cx + 8, neck + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = variant === "administrador" ? "#c62828" : "#0d47a1";
+        ctx.fillRect(cx - 3, neck + 10, 6, 22);
+        ctx.fillStyle = "#263238";
+        ctx.fillRect(cx - 16, neck + 54, 14, 30);
+        ctx.fillRect(cx + 2, neck + 54, 14, 30);
+    }
+}
+
+function generateShapeCanvas(tableData) {
+    const box = tableData.box || { w: 220, h: 86 };
+    const width = box.w;
+    const height = box.h;
+    const texture = makeCanvasTexture(width, height, (ctx, w, h) => {
+        if (tableData.shape === "usecase") {
+            ctx.save();
+            ctx.shadowColor = "rgba(20, 60, 110, 0.18)";
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 3;
+            ctx.fillStyle = tableData.dotted ? "#ffffff" : (tableData.isNew ? "#d5d5d5" : "#ffffff");
+            ctx.strokeStyle = "#2E75B6";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(w / 2, h / 2, w / 2 - 8, h / 2 - 7, 0, 0, Math.PI * 2);
+            if (tableData.dotted) ctx.setLineDash([8, 6]);
+            ctx.fill();
+            ctx.shadowColor = "transparent";
+            ctx.stroke();
+            ctx.restore();
+            drawCenteredLines(
+                ctx,
+                tableData.labelLines || [tableData.name],
+                w / 2,
+                h / 2,
+                "600 18px system-ui, Segoe UI, sans-serif",
+                "#1a1a1a",
+                20
+            );
+        } else if (tableData.shape === "actor") {
+            drawActorFigure(ctx, w, h, tableData.variant);
+            ctx.fillStyle = "#1c2833";
+            ctx.font = "700 20px system-ui, Segoe UI, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(tableData.name, w / 2, h - 22);
+        } else if (tableData.shape === "note") {
+            const lines = tableData.labelLines || [];
+            ctx.fillStyle = "#1a1a1a";
+            ctx.font = "700 15px system-ui, Segoe UI, sans-serif";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            lines.forEach((line, i) => {
+                ctx.font = i < 2 ? "700 15px system-ui, Segoe UI, sans-serif" : "500 14px system-ui, Segoe UI, sans-serif";
+                ctx.fillText(line, 8, 22 + i * 24);
+            });
+        } else if (tableData.shape === "database") {
+            const cx = w / 2;
+            const top = h * 0.30;
+            const bottom = h * 0.74;
+            const rw = w * 0.40;
+            const rh = h * 0.14;
+            ctx.fillStyle = "#1e5aa8";
+            ctx.beginPath();
+            ctx.ellipse(cx, top, rw, rh, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(cx - rw, top, rw * 2, bottom - top);
+            ctx.fillStyle = "#174e96";
+            ctx.beginPath();
+            ctx.ellipse(cx, bottom, rw, rh, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = "#5aa0e6";
+            ctx.beginPath();
+            ctx.ellipse(cx, top, rw, rh, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#0d3f86";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(cx, top, rw, rh, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx - rw, top);
+            ctx.lineTo(cx - rw, bottom);
+            ctx.moveTo(cx + rw, top);
+            ctx.lineTo(cx + rw, bottom);
+            ctx.stroke();
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "700 26px system-ui, Segoe UI, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("BD", cx, (top + bottom) / 2 + 4);
+        }
+    });
+    return { texture, width, height };
+}
+
+function makeTextPlane(text, worldW, worldH, opts) {
+    const texture = makeCanvasTexture(worldW, worldH, (ctx, w, h) => {
+        const fontPx = opts.fontPx || 22;
+        ctx.fillStyle = opts.color || "#1a365d";
+        ctx.font = `${opts.bold ? "700" : "500"} ${fontPx}px system-ui, Segoe UI, sans-serif`;
+        ctx.textBaseline = "middle";
+        const align = opts.align || "center";
+        ctx.textAlign = align;
+        const lines = String(text).split("\n");
+        const gap = fontPx * 1.2;
+        const x = align === "right" ? w - 6 : align === "left" ? 6 : w / 2;
+        let y = h / 2 - ((lines.length - 1) * gap) / 2;
+        lines.forEach((line) => {
+            ctx.fillText(line, x, y);
+            y += gap;
+        });
+    });
+    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldH), material);
+    mesh.renderOrder = 3;
+    return mesh;
+}
+
+function makeOutline(width, height, ellipse, color) {
+    const pts = [];
+    if (ellipse) {
+        const seg = 56;
+        for (let i = 0; i <= seg; i++) {
+            const t = (i / seg) * Math.PI * 2;
+            pts.push(new THREE.Vector3(Math.cos(t) * (width / 2 + 5), Math.sin(t) * (height / 2 + 5), 2));
+        }
+    } else {
+        const hw = width / 2 + 6;
+        const hh = height / 2 + 6;
+        pts.push(
+            new THREE.Vector3(-hw, -hh, 2),
+            new THREE.Vector3(hw, -hh, 2),
+            new THREE.Vector3(hw, hh, 2),
+            new THREE.Vector3(-hw, hh, 2),
+            new THREE.Vector3(-hw, -hh, 2)
+        );
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat = new THREE.LineBasicMaterial({
+        color: new THREE.Color(color || "#2E75B6"),
+        transparent: true,
+        opacity: 0
+    });
+    return new THREE.Line(geo, mat);
+}
+
+function makeNewBadge() {
+    const texture = makeCanvasTexture(70, 28, (ctx, w, h) => {
+        ctx.fillStyle = "#d32f2f";
+        ctx.font = "700 18px system-ui, Segoe UI, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("[NEW]", w / 2, h / 2);
+    });
+    const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(62, 24, 1);
+    sprite.renderOrder = 4;
+    return sprite;
+}
+
+function attachCaption(parent, text, x, y, worldW, worldH, fontPx) {
+    const plane = makeTextPlane(text, worldW, worldH, {
+        fontPx: fontPx,
+        color: "#1a1a1a",
+        bold: false,
+        align: "center"
+    });
+    plane.position.set(x, y, 2);
+    parent.add(plane);
+}
+
+function createShapeMesh(tableData) {
+    const { texture, width, height } = generateShapeCanvas(tableData);
+    const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+    const pos = getTablePosition(tableData, currentLayout);
+    mesh.position.set(pos.x, pos.y, pos.z || 0);
+    mesh.renderOrder = 2;
+
+    const outline = makeOutline(width, height, tableData.anchor === "ellipse", tableData.color);
+    mesh.add(outline);
+
+    if (tableData.badgeSide === "left" || tableData.badgeSide === "both") {
+        const badge = makeNewBadge();
+        badge.position.set(-(width / 2) - 40, 6, 3);
+        mesh.add(badge);
+    }
+    if (tableData.badgeSide === "right" || tableData.badgeSide === "both") {
+        const badge = makeNewBadge();
+        badge.position.set(width / 2 + 40, 6, 3);
+        mesh.add(badge);
+    }
+    if (tableData.captionAbove) {
+        attachCaption(mesh, tableData.captionAbove, -10, height / 2 + 48, 180, 52, 16);
+    }
+    if (tableData.captionBelow) {
+        attachCaption(mesh, tableData.captionBelow, 0, -(height / 2) - 78, 230, 130, 13);
+    }
+
+    mesh.userData = {
+        id: tableData.id,
+        tableData: tableData,
+        cardWidth: width,
+        cardHeight: height,
+        anchor: tableData.anchor || "rect",
+        targetPos: new THREE.Vector3(pos.x, pos.y, pos.z || 0),
+        frontMaterial: material,
+        outlineMesh: outline
+    };
+
+    scene.add(mesh);
+    tableMeshes[tableData.id] = mesh;
+}
+
+function clearUseCaseExtras() {
+    useCaseExtras.forEach((mesh) => {
+        scene.remove(mesh);
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (mesh.material) {
+            if (mesh.material.map) mesh.material.map.dispose();
+            mesh.material.dispose();
+        }
+    });
+    useCaseExtras = [];
+}
+
+function restoreDefaultAtmosphere() {
+    clearUseCaseExtras();
+    if (gridHelper) gridHelper.visible = true;
+    if (ambientDust) ambientDust.visible = true;
+    scene.fog = new THREE.FogExp2(SCENE_BG, 0.00035);
+    scene.background = new THREE.Color(SCENE_BG);
+}
+
+function applyUseCaseAtmosphere() {
+    if (gridHelper) gridHelper.visible = false;
+    if (ambientDust) ambientDust.visible = false;
+    scene.fog = null;
+    if (!useCaseBgTexture) {
+        useCaseBgTexture = makeCanvasTexture(32, 512, (ctx, w, h) => {
+            const g = ctx.createLinearGradient(0, 0, 0, h);
+            g.addColorStop(0, "#f7fbfe");
+            g.addColorStop(0.55, "#e7f3fb");
+            g.addColorStop(1, "#d4e8f6");
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, w, h);
+        });
+    }
+    scene.background = useCaseBgTexture;
+}
+
+function addFrameBar(x, y, w, h) {
+    const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, h),
+        new THREE.MeshBasicMaterial({ color: 0x2e75b6 })
+    );
+    mesh.position.set(x, y, -8);
+    mesh.renderOrder = 0;
+    scene.add(mesh);
+    useCaseExtras.push(mesh);
+}
+
+function buildUseCaseFrame(frame) {
+    if (!frame) return;
+    const { minX, maxX, minY, maxY } = frame;
+    const t = 5;
+    const w = maxX - minX;
+    const h = maxY - minY;
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    addFrameBar(cx, maxY, w + t, t);
+    addFrameBar(cx, minY, w + t, t);
+    addFrameBar(minX, cy, t, h);
+    addFrameBar(maxX, cy, t, h);
+
+    const slide = makeTextPlane("❚❚   " + frame.slideTitle, w + 80, 54, {
+        fontPx: 30,
+        color: "#1a4a86",
+        bold: true,
+        align: "left"
+    });
+    slide.position.set(cx - 10, maxY + 62, 0);
+    scene.add(slide);
+    useCaseExtras.push(slide);
+
+    addFrameBar(cx, maxY + 30, w + 160, 2);
+
+    const inner = makeTextPlane(frame.title, 640, 40, {
+        fontPx: 24,
+        color: "#16325c",
+        bold: true,
+        align: "center"
+    });
+    inner.position.set(cx, maxY - 34, 0);
+    scene.add(inner);
+    useCaseExtras.push(inner);
+
+    const footer = makeTextPlane(frame.footer, 320, 28, {
+        fontPx: 15,
+        color: "#1e4b8a",
+        bold: true,
+        align: "right"
+    });
+    footer.position.set(maxX + 150, minY - 28, 0);
+    scene.add(footer);
+    useCaseExtras.push(footer);
+}
+
+// -----------------------------------------------------------------------------
 // 4. CREACIÓN DE TABLAS 3D (NODOS ARRASTRABLES)
 // -----------------------------------------------------------------------------
 function createTables(data) {
     data.tables.forEach(tableData => {
+        if (tableData.shape) {
+            createShapeMesh(tableData);
+            return;
+        }
         const { texture, height } = generateTableCanvas(tableData, currentMode);
 
         const frontMaterial = new THREE.MeshStandardMaterial({
@@ -392,7 +829,38 @@ function getTablePosition(tableData, layout) {
 // -----------------------------------------------------------------------------
 // 5. CÁLCULO DE PUNTOS DE ANCLAJE EN LOS BORDES / LATERALES (NUNCA POR DENTRO)
 // -----------------------------------------------------------------------------
-function calculateTableAnchors(fromMesh, toMesh) {
+function pointOnNodeRim(mesh, toward) {
+    const a = (mesh.userData.cardWidth || CARD_WIDTH) / 2;
+    const b = (mesh.userData.cardHeight || 200) / 2;
+    const dx = toward.x - mesh.position.x;
+    const dy = toward.y - mesh.position.y;
+    const z = mesh.position.z + 1;
+
+    if (mesh.userData.anchor === "ellipse") {
+        const denom = Math.sqrt((dx * dx) / (a * a) + (dy * dy) / (b * b)) || 1;
+        return new THREE.Vector3(
+            mesh.position.x + dx / denom,
+            mesh.position.y + dy / denom,
+            z
+        );
+    }
+
+    const sx = dx === 0 ? Infinity : a / Math.abs(dx);
+    const sy = dy === 0 ? Infinity : b / Math.abs(dy);
+    const s = Math.min(sx, sy);
+    return new THREE.Vector3(mesh.position.x + dx * s, mesh.position.y + dy * s, z);
+}
+
+function calculateFlatAnchors(fromMesh, toMesh) {
+    const start = pointOnNodeRim(fromMesh, toMesh.position);
+    const end = pointOnNodeRim(toMesh, fromMesh.position);
+    const curve = new THREE.LineCurve3(start, end);
+    const mid = start.clone().lerp(end, 0.5);
+    return { start, end, mid, curve };
+}
+
+function calculateTableAnchors(fromMesh, toMesh, flat) {
+    if (flat) return calculateFlatAnchors(fromMesh, toMesh);
     const pA = fromMesh.position;
     const pB = toMesh.position;
 
@@ -483,23 +951,29 @@ function createRelationships(data) {
         if (!fromMesh || !toMesh) return;
 
         // Calcular anclajes en los laterales de las tablas
-        const anchorData = calculateTableAnchors(fromMesh, toMesh);
+        const flat = !!rel.flat;
+        const anchorData = calculateTableAnchors(fromMesh, toMesh, flat);
 
-        const tubeGeo = new THREE.TubeGeometry(anchorData.curve, 40, 2.4, 8, false);
-        const tubeMat = new THREE.MeshStandardMaterial({
-            color: new THREE.Color(rel.color),
-            roughness: 0.2,
-            metalness: 0.5,
-            emissive: new THREE.Color(rel.color).multiplyScalar(0.4)
-        });
+        const tubeGeo = new THREE.TubeGeometry(anchorData.curve, flat ? 8 : 40, flat ? 1.7 : 2.4, flat ? 6 : 8, false);
+        const tubeMat = flat
+            ? new THREE.MeshBasicMaterial({ color: new THREE.Color(rel.color) })
+            : new THREE.MeshStandardMaterial({
+                color: new THREE.Color(rel.color),
+                roughness: 0.2,
+                metalness: 0.5,
+                emissive: new THREE.Color(rel.color).multiplyScalar(0.4)
+            });
         const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat);
+        if (flat) tubeMesh.renderOrder = 1;
 
-        // Placa / Badge flotante en el centro de la curva
-        const badgeSprite = createRelationBadge(rel, currentMode);
-        badgeSprite.position.copy(anchorData.mid);
+        let badgeSprite = null;
+        if (!flat) {
+            badgeSprite = createRelationBadge(rel, currentMode);
+            badgeSprite.position.copy(anchorData.mid);
+            scene.add(badgeSprite);
+        }
 
         scene.add(tubeMesh);
-        scene.add(badgeSprite);
 
         const relObj = {
             id: rel.id,
@@ -512,6 +986,8 @@ function createRelationships(data) {
         };
 
         relationObjects.push(relObj);
+
+        if (flat) return;
 
         // Partículas luminosas que viajan a través del cable
         for (let i = 0; i < 2; i++) {
@@ -580,12 +1056,13 @@ function updateRelationshipGeometries() {
         if (!fromMesh || !toMesh) return;
 
         // Recalcular anclajes laterales en tiempo real
-        const anchorData = calculateTableAnchors(fromMesh, toMesh);
+        const flat = !!(relObj.meta && relObj.meta.flat);
+        const anchorData = calculateTableAnchors(fromMesh, toMesh, flat);
         relObj.curve = anchorData.curve;
 
         relObj.mesh.geometry.dispose();
-        relObj.mesh.geometry = new THREE.TubeGeometry(relObj.curve, 40, 2.4, 8, false);
-        relObj.badge.position.copy(anchorData.mid);
+        relObj.mesh.geometry = new THREE.TubeGeometry(relObj.curve, flat ? 8 : 40, flat ? 1.7 : 2.4, flat ? 6 : 8, false);
+        if (relObj.badge) relObj.badge.position.copy(anchorData.mid);
     });
 }
 
@@ -677,7 +1154,7 @@ function onPointerMove(event) {
             }
             hoveredTable = topMesh;
             hoveredTable.userData.outlineMesh.material.opacity = 0.7;
-            hoveredTable.userData.outlineMesh.material.color.setHex(hoveredTable.userData.tableData.color);
+            hoveredTable.userData.outlineMesh.material.color.set(hoveredTable.userData.tableData.color);
             document.body.style.cursor = "grab";
         }
     } else {
@@ -817,6 +1294,11 @@ function setupUIControls() {
     });
 
     document.getElementById("btn-view-2d")?.addEventListener("click", () => {
+        if (currentWorkspaceIdx === 3) {
+            flyCameraTo(0, -10, 2050);
+            showToast("Vista frontal del caso de uso");
+            return;
+        }
         flyCameraTo(0, 0, 1400);
         showToast("Vista Frontal Plana");
     });
@@ -835,8 +1317,12 @@ function setupUIControls() {
     });
 
     document.getElementById("btn-reset-cam")?.addEventListener("click", () => {
-        flyCameraTo(0, 120, 1300);
-        controls.target.set(0, 0, 0);
+        if (currentWorkspaceIdx === 3) {
+            flyCameraTo(0, -10, 2050);
+        } else {
+            flyCameraTo(0, 120, 1300);
+            controls.target.set(0, 0, 0);
+        }
         showToast("Cámara Restablecida");
     });
 
@@ -1075,8 +1561,8 @@ function createDigitalDust() {
         opacity: 0.35
     });
 
-    const dust = new THREE.Points(geometry, material);
-    scene.add(dust);
+    ambientDust = new THREE.Points(geometry, material);
+    scene.add(ambientDust);
 }
 
 function setupModals() {
