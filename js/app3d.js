@@ -46,6 +46,7 @@ let gridHelper = null;
 let ambientDust = null;
 let useCaseExtras = [];
 let useCaseBgTexture = null;
+let schemaBgTexture = null;
 const SCENE_BG = 0x070b14;
 
 // Variables para arrastre libre de tablas en 3D
@@ -178,6 +179,8 @@ function loadWorkspace(idx) {
     if (idx === 3) {
         applyUseCaseAtmosphere();
         buildUseCaseFrame(workspace.data.frame);
+    } else if (idx === 0) {
+        applySchemaAtmosphere();
     }
 
     // Actualizar UI del banner y badge
@@ -197,7 +200,16 @@ function loadWorkspace(idx) {
     }
 
     // Centrar suavemente la cámara en el nuevo diagrama
-    flyCameraTo(0, idx === 3 ? -10 : 100, idx === 3 ? 2050 : (idx === 0 ? 1300 : 1100));
+    let camY = 100;
+    let camZ = 1100;
+    if (idx === 3) {
+        camY = -10;
+        camZ = 2050;
+    } else if (idx === 0) {
+        camY = 0;
+        camZ = 2700;
+    }
+    flyCameraTo(0, camY, camZ);
 
     showToast(`Pestaña activa: ${workspace.name}`);
 }
@@ -425,8 +437,93 @@ function drawActorFigure(ctx, w, h, variant) {
     }
 }
 
+function measureDbTable(tableData) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    ctx.font = "600 15px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+    let max = ctx.measureText(tableData.fullName).width + 48;
+    tableData.columns.forEach((col) => {
+        const label = col.name + " : " + col.type;
+        const width = ctx.measureText(label).width + 58;
+        if (width > max) max = width;
+    });
+    return {
+        w: Math.ceil(max),
+        h: 46 + tableData.columns.length * 28 + 12
+    };
+}
+
+function drawSchemaKey(ctx, x, y, color) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(x, y, 3.4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + 3.2, y);
+    ctx.lineTo(x + 10, y);
+    ctx.moveTo(x + 7.2, y);
+    ctx.lineTo(x + 7.2, y + 2.6);
+    ctx.moveTo(x + 9.4, y);
+    ctx.lineTo(x + 9.4, y + 2.6);
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawDbTable(ctx, tableData, w, h) {
+    ctx.fillStyle = "rgba(60, 64, 67, 0.08)";
+    ctx.fillRect(4, 5, w - 6, h - 6);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w - 6, h - 8);
+    ctx.strokeStyle = "#d5d7db";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(0.75, 0.75, w - 7.5, h - 9.5);
+
+    ctx.fillStyle = "#f3f4f6";
+    ctx.fillRect(1, 1, w - 8, 40);
+    ctx.strokeStyle = "#e4e6ea";
+    ctx.beginPath();
+    ctx.moveTo(1, 41);
+    ctx.lineTo(w - 7, 41);
+    ctx.stroke();
+
+    drawSchemaKey(ctx, 16, 21, "#1a73e8");
+    ctx.fillStyle = "#202124";
+    ctx.font = "700 16px system-ui, Segoe UI, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(tableData.fullName, 32, 21);
+
+    const mode = currentMode;
+    tableData.columns.forEach((col, i) => {
+        const y = 41 + i * 28 + 16;
+        if (col.isPK) {
+            drawSchemaKey(ctx, 16, y, "#1a73e8");
+        } else if (col.isFK) {
+            drawSchemaKey(ctx, 16, y, "#80868b");
+        } else {
+            ctx.strokeStyle = "#9aa0a6";
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.arc(16, y, 3.3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        let label = col.name + " : " + col.type;
+        if (mode === "erd") label = col.name;
+        else if (mode === "uml") label = (col.isPK ? "+ " : "- ") + col.name + " : " + col.type;
+        ctx.fillStyle = "#202124";
+        ctx.font = "500 15px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+        ctx.fillText(label, 32, y);
+    });
+}
+
 function generateShapeCanvas(tableData) {
-    const box = tableData.box || { w: 220, h: 86 };
+    const box = tableData.shape === "dbtable"
+        ? measureDbTable(tableData)
+        : (tableData.box || { w: 220, h: 86 });
     const width = box.w;
     const height = box.h;
     const texture = makeCanvasTexture(width, height, (ctx, w, h) => {
@@ -506,6 +603,8 @@ function generateShapeCanvas(tableData) {
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText("BD", cx, (top + bottom) / 2 + 4);
+        } else if (tableData.shape === "dbtable") {
+            drawDbTable(ctx, tableData, w, h);
         }
     });
     return { texture, width, height };
@@ -671,6 +770,19 @@ function applyUseCaseAtmosphere() {
         });
     }
     scene.background = useCaseBgTexture;
+}
+
+function applySchemaAtmosphere() {
+    if (gridHelper) gridHelper.visible = false;
+    if (ambientDust) ambientDust.visible = false;
+    scene.fog = null;
+    if (!schemaBgTexture) {
+        schemaBgTexture = makeCanvasTexture(8, 8, (ctx, w, h) => {
+            ctx.fillStyle = "#f6f7f9";
+            ctx.fillRect(0, 0, w, h);
+        });
+    }
+    scene.background = schemaBgTexture;
 }
 
 function addFrameBar(x, y, w, h) {
@@ -1299,6 +1411,11 @@ function setupUIControls() {
             showToast("Vista frontal del caso de uso");
             return;
         }
+        if (currentWorkspaceIdx === 0) {
+            flyCameraTo(40, 0, 2700);
+            showToast("Vista frontal del esquema");
+            return;
+        }
         flyCameraTo(0, 0, 1400);
         showToast("Vista Frontal Plana");
     });
@@ -1319,6 +1436,8 @@ function setupUIControls() {
     document.getElementById("btn-reset-cam")?.addEventListener("click", () => {
         if (currentWorkspaceIdx === 3) {
             flyCameraTo(0, -10, 2050);
+        } else if (currentWorkspaceIdx === 0) {
+            flyCameraTo(40, 0, 2700);
         } else {
             flyCameraTo(0, 120, 1300);
             controls.target.set(0, 0, 0);
@@ -1358,7 +1477,16 @@ function switchDiagramMode(mode) {
     currentMode = mode;
 
     Object.values(tableMeshes).forEach(mesh => {
-        const { texture } = generateTableCanvas(mesh.userData.tableData, mode);
+        const tableData = mesh.userData.tableData;
+        if (tableData.shape === "dbtable") {
+            const { texture } = generateShapeCanvas(tableData);
+            if (mesh.userData.frontMaterial.map) mesh.userData.frontMaterial.map.dispose();
+            mesh.userData.frontMaterial.map = texture;
+            mesh.userData.frontMaterial.needsUpdate = true;
+            return;
+        }
+        if (tableData.shape) return;
+        const { texture } = generateTableCanvas(tableData, mode);
         mesh.userData.frontMaterial.map = texture;
         mesh.userData.frontMaterial.needsUpdate = true;
     });
@@ -1456,7 +1584,8 @@ function showTableDetails(tableData) {
 
     if (liveContainer && liveRecordsDiv) {
         if (currentWorkspaceIdx === 0) {
-            const sqliteName = tableData.id === "auth_users" ? "auth_users" : `colegio_${tableData.name}`;
+            const sqliteName = tableData.sqliteName
+                || (tableData.id === "auth_users" || tableData.id === "auth_usuarios" ? "auth_users" : `colegio_${tableData.name}`);
             fetch(`/api/records?table=${sqliteName}`)
                 .then(res => res.json())
                 .then(data => {
