@@ -291,6 +291,59 @@ const DATABASE_METADATA = {
 // 3. Diagrama Modelo Entidad Relación (ERD Conceptual - Imagen 2)
 // 4. Diagrama de Clases (UML Estructural - Imagen 3)
 // =============================================================================
+// -----------------------------------------------------------------------------
+// HELPERS DEL DIAGRAMA DE FLUJO (coordenadas en píxeles de la lámina)
+// -----------------------------------------------------------------------------
+function flowNode(id, name, kind, cx, cy, w, h, opts) {
+    const o = opts || {};
+    return {
+        id: id,
+        name: name,
+        schema: "PROCESO",
+        fullName: name,
+        displayNameER: id.toUpperCase(),
+        displayNameUML: name,
+        color: o.border || "#2E4A9A",
+        shape: "flow",
+        kind: kind,
+        flowPx: true,
+        anchor: "rect",
+        posOriginal: { x: cx, y: cy, z: 0 },
+        box: { w: w, h: h },
+        fill: o.fill || "#FFFFFF",
+        border: o.border || "#2E4A9A",
+        textColor: o.textColor || "#1D2B3A",
+        icon: o.icon || "",
+        iconPos: o.iconPos || "left",
+        bold: !!o.bold,
+        labelLines: o.lines || [name],
+        description: name,
+        columns: [
+            { name: "paso", type: kind, isPK: true, isFK: false, desc: name }
+        ]
+    };
+}
+
+function flowEdge(id, from, fromSide, to, toSide, via, color, arrow, dashed, description) {
+    return {
+        id: id,
+        fromTable: from,
+        toTable: to,
+        fromSide: fromSide,
+        toSide: toSide,
+        via: via || [],
+        color: color,
+        arrow: arrow,
+        dashed: dashed,
+        flow: true,
+        cardinalityPhysical: "flujo",
+        verbERD: "flujo",
+        verbUML: "flujo",
+        multUML: "—",
+        description: description
+    };
+}
+
 const PROJECT_WORKSPACES = [
     // -------------------------------------------------------------------------
     // PESTAÑA 1: BASES DE DATOS (ESQUEMA FÍSICO)
@@ -1393,6 +1446,77 @@ const PROJECT_WORKSPACES = [
                 { id: "rel_est_per", fromTable: "act_estudiante", toTable: "cu_periodos", fromCol: "actor", toCol: "caso", cardinalityPhysical: "asocia", verbERD: "asocia", verbUML: "asocia", multUML: "—", color: "#2E75B6", flat: true, description: "Estudiante se asocia con Gestionar Periodos Académicos." },
                 { id: "rel_alm_bd", fromTable: "cu_almacena", toTable: "nodo_bd", fromCol: "caso", toCol: "almacen", cardinalityPhysical: "guarda", verbERD: "guarda", verbUML: "guarda", multUML: "—", color: "#2E75B6", flat: true, description: "Almacena (Guarda Info) persiste en la base de datos Matriclik." },
                 { id: "rel_dot_bd", fromTable: "cu_dots", toTable: "nodo_bd", fromCol: "caso", toCol: "almacen", cardinalityPhysical: "guarda", verbERD: "guarda", verbUML: "guarda", multUML: "—", color: "#2E75B6", flat: true, description: "Las demás funciones se apoyan en la base de datos Matriclik." }
+            ]
+        }
+    },
+
+    // -------------------------------------------------------------------------
+    // PESTAÑA 5: DIAGRAMA DE FLUJO - INSCRIPCIÓN DEPORTIVA (lámina de referencia)
+    // Coordenadas en píxeles de la lámina (posOriginal con flowPx).
+    // -------------------------------------------------------------------------
+    {
+        id: "tab_flujo",
+        name: "Flujo de Inscripción",
+        subtitle: "Diagrama de flujo - Inscripción deportiva",
+        status: "active",
+        bannerText: "🔀 Diagrama de flujo de la inscripción deportiva, como en la lámina. Arrastra cualquier nodo; las flechas lo siguen.",
+        data: {
+            info: {
+                title: "Diagrama de flujo - Inscripción deportiva",
+                description: "Recepción, validación, subprocesos principales, evaluación y generación de resultados.",
+                schemas: ["PROCESO"],
+                totalTables: 16,
+                totalRelations: 17,
+                labels: [
+                    { text: "SÍ", x: 404, y: 280, color: "#1F3A68" },
+                    { text: "NO", x: 258, y: 184, color: "#1F3A68" },
+                    { text: "NO", x: 512, y: 416, color: "#E0218A" },
+                    { text: "SÍ", x: 402, y: 489, color: "#1F3A68" },
+                    { text: "SÍ", x: 404, y: 836, color: "#1F3A68" },
+                    { text: "NO — retorna a subprocesos", x: 205, y: 766, color: "#E0218A" }
+                ]
+            },
+            tables: [
+                flowNode("inicio", "INICIO", "terminator", 387, 33, 136, 44, { fill: "#2E7D4F", border: "#1B5E36", textColor: "#ffffff", lines: ["INICIO"] }),
+                flowNode("recepcion", "Recepción de solicitud", "process", 388, 109, 320, 62, { fill: "#D9E6FF", border: "#2E4A9A", icon: "📝", iconPos: "left", lines: ["Recepción de solicitud", "de inscripción deportiva"] }),
+                flowNode("solicitar", "Solicitar información", "process", 123, 191, 217, 68, { fill: "#FFF2B3", border: "#D9A21B", icon: "⚠️", iconPos: "left", lines: ["Solicitar información", "faltante al solicitante"] }),
+                flowNode("dec_doc", "¿Documentación completa?", "decision", 388, 212, 205, 105, { fill: "#FADCEB", border: "#E0218A", icon: "📄", lines: ["¿Documentación", "completa?"] }),
+                flowNode("validacion", "Validación y registro", "process", 388, 323, 297, 63, { fill: "#BEE3F8", border: "#2B6CB0", icon: "🖥️", iconPos: "left", lines: ["Validación y registro", "del deportista en el sistema"] }),
+                flowNode("dec_reg", "¿Registro aprobado?", "decision", 388, 430, 190, 100, { fill: "#FADCEB", border: "#E0218A", icon: "✅", lines: ["¿Registro", "aprobado?"] }),
+                flowNode("notificar", "Notificar rechazo", "process", 667, 388, 200, 63, { fill: "#FFE9A6", border: "#E0A43A", icon: "✉️", iconPos: "left", lines: ["Notificar rechazo", "al solicitante"] }),
+                flowNode("subprocesos", "SUBPROCESOS PRINCIPALES", "subprocess", 388, 527, 331, 60, { fill: "#8ED9A5", border: "#2E8B57", icon: "⚙️", iconPos: "left", bold: true, lines: ["SUBPROCESOS", "PRINCIPALES"] }),
+                flowNode("sub_atletas", "Registro de Atletas", "subprocess", 94, 641, 132, 93, { fill: "#B5F2D2", border: "#1E9A62", icon: "👤", iconPos: "top", lines: ["Registro de", "Atletas"] }),
+                flowNode("sub_prog", "Programación Deportiva", "subprocess", 238, 641, 132, 93, { fill: "#BFD9FF", border: "#3A7BD5", icon: "📅", iconPos: "top", lines: ["Programación", "Deportiva"] }),
+                flowNode("sub_inst", "Gestión de Instalaciones", "subprocess", 388, 641, 136, 93, { fill: "#FFD98A", border: "#D9921A", icon: "🏢", iconPos: "top", lines: ["Gestión de", "Instalaciones"] }),
+                flowNode("sub_eval", "Evaluación Técnica", "subprocess", 536, 641, 136, 93, { fill: "#D9C6FA", border: "#7B4FD6", icon: "📋", iconPos: "top", lines: ["Evaluación", "Técnica"] }),
+                flowNode("sub_rep", "Reportes y Estadísticas", "subprocess", 684, 641, 136, 93, { fill: "#FBC4DF", border: "#D81B60", icon: "📊", iconPos: "top", lines: ["Reportes y", "Estadísticas"] }),
+                flowNode("dec_eval", "¿Evaluación completa?", "decision", 387, 776, 182, 88, { fill: "#FADCEB", border: "#E0218A", icon: "🔍", lines: ["¿Evaluación", "completa?"] }),
+                flowNode("generacion", "Generación de resultados", "process", 388, 880, 301, 60, { fill: "#D9CCF7", border: "#6A4FC7", icon: "📊", iconPos: "left", lines: ["Generación de resultados", "y reporte final del proceso"] }),
+                flowNode("fin", "FIN", "terminator", 388, 965, 130, 44, { fill: "#2E7D4F", border: "#1B5E36", textColor: "#ffffff", lines: ["FIN"] })
+            ],
+            relations: [
+                flowEdge("rel_inicio_recepcion", "inicio", "bottom", "recepcion", "top", [], "#1F3A68", true, false, "Inicio envía la solicitud a recepción."),
+                flowEdge("rel_recepcion_dec_doc", "recepcion", "bottom", "dec_doc", "top", [], "#1F3A68", true, false, "La solicitud pasa a verificar la documentación."),
+                flowEdge("rel_dec_doc_validacion", "dec_doc", "bottom", "validacion", "top", [], "#1F3A68", true, false, "Si la documentación está completa, se valida y registra."),
+                flowEdge("rel_dec_doc_solicitar", "dec_doc", "left", "solicitar", "right", [], "#1F3A68", true, false, "Si falta documentación, se solicita la información faltante."),
+                flowEdge("rel_solicitar_recepcion", "solicitar", "top", "recepcion", "left", [[123, 109]], "#E0218A", true, true, "La información faltante regresa a la recepción."),
+                flowEdge("rel_validacion_dec_reg", "validacion", "bottom", "dec_reg", "top", [], "#1F3A68", true, false, "El registro se somete a aprobación."),
+                flowEdge("rel_dec_reg_notificar", "dec_reg", "right", "notificar", "left", [[540, 430], [540, 388]], "#E0218A", true, true, "Si el registro no se aprueba, se notifica el rechazo."),
+                flowEdge("rel_dec_reg_subprocesos", "dec_reg", "bottom", "subprocesos", "top", [], "#1F3A68", true, false, "Si se aprueba, inician los subprocesos principales."),
+                flowEdge("rel_sub_atletas", "subprocesos", "bottom", "sub_atletas", "top", [[388, 572], [94, 572]], "#2E8B57", false, false, "Subproceso: registro de atletas."),
+                flowEdge("rel_sub_prog", "subprocesos", "bottom", "sub_prog", "top", [[388, 572], [238, 572]], "#2E8B57", false, false, "Subproceso: programación deportiva."),
+                flowEdge("rel_sub_inst", "subprocesos", "bottom", "sub_inst", "top", [[388, 572], [388, 572]], "#2E8B57", false, false, "Subproceso: gestión de instalaciones."),
+                flowEdge("rel_sub_eval", "subprocesos", "bottom", "sub_eval", "top", [[388, 572], [536, 572]], "#2E8B57", false, false, "Subproceso: evaluación técnica."),
+                flowEdge("rel_sub_rep", "subprocesos", "bottom", "sub_rep", "top", [[388, 572], [684, 572]], "#2E8B57", false, false, "Subproceso: reportes y estadísticas."),
+                flowEdge("rel_atletas_eval", "sub_atletas", "bottom", "dec_eval", "top", [[94, 710], [387, 710]], "#2E8B57", false, false, "Los subprocesos alimentan la evaluación."),
+                flowEdge("rel_prog_eval", "sub_prog", "bottom", "dec_eval", "top", [[238, 710], [387, 710]], "#2E8B57", false, false, "Los subprocesos alimentan la evaluación."),
+                flowEdge("rel_inst_eval", "sub_inst", "bottom", "dec_eval", "top", [[388, 710], [387, 710]], "#2E8B57", false, false, "Los subprocesos alimentan la evaluación."),
+                flowEdge("rel_eval_eval", "sub_eval", "bottom", "dec_eval", "top", [[536, 710], [387, 710]], "#2E8B57", false, false, "Los subprocesos alimentan la evaluación."),
+                flowEdge("rel_rep_eval", "sub_rep", "bottom", "dec_eval", "top", [[684, 710], [387, 710]], "#2E8B57", false, false, "Los subprocesos alimentan la evaluación."),
+                flowEdge("rel_dec_eval_loop", "dec_eval", "left", "subprocesos", "left", [[18, 776], [18, 527]], "#E0218A", true, true, "Si la evaluación no está completa, se retorna a los subprocesos."),
+                flowEdge("rel_dec_eval_generacion", "dec_eval", "bottom", "generacion", "top", [], "#1F3A68", true, false, "Si la evaluación está completa, se generan los resultados."),
+                flowEdge("rel_generacion_fin", "generacion", "bottom", "fin", "top", [], "#1F3A68", true, false, "Fin del proceso."),
+                flowEdge("rel_notificar_fin", "notificar", "bottom", "fin", "right", [[683, 420], [683, 965]], "#E0218A", true, true, "El rechazo termina el proceso.")
             ]
         }
     }

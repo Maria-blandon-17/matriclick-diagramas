@@ -153,8 +153,12 @@ function loadWorkspace(idx) {
 
     // Limpiar relaciones anteriores
     relationObjects.forEach(obj => {
-        scene.remove(obj.mesh);
-        if (obj.mesh.geometry) obj.mesh.geometry.dispose();
+        if (obj.flow) {
+            disposeGroup(obj.mesh);
+        } else {
+            scene.remove(obj.mesh);
+            if (obj.mesh.geometry) obj.mesh.geometry.dispose();
+        }
         if (obj.badge) scene.remove(obj.badge);
     });
     relationObjects = [];
@@ -174,18 +178,22 @@ function loadWorkspace(idx) {
 
     // Crear tablas y relaciones del espacio activo
     createTables(workspace.data);
-    createRelationships(workspace.data);
+    if (idx === 4) {
+        createFlowEdges(workspace.data);
+    } else {
+        createRelationships(workspace.data);
+    }
 
     if (idx === 3) {
         applyUseCaseAtmosphere();
         buildUseCaseFrame(workspace.data.frame);
-    } else if (idx === 0) {
+    } else if (idx === 0 || idx === 4) {
         applySchemaAtmosphere();
     }
 
     // Actualizar UI del banner y badge
     const badge = document.getElementById("active-diagram-badge");
-    const titles = ["BASE DE DATOS", "MODELO ENTIDAD RELACIÓN", "CLASES DE USO", "CASOS DE USO"];
+    const titles = ["BASE DE DATOS", "MODELO ENTIDAD RELACIÓN", "CLASES DE USO", "CASOS DE USO", "DIAGRAMA DE FLUJO"];
     if (badge) badge.textContent = titles[idx] || `DIAGRAMA ${idx + 1}`;
 
     const hint = document.getElementById("tab-banner-hint");
@@ -200,16 +208,8 @@ function loadWorkspace(idx) {
     }
 
     // Centrar suavemente la cámara en el nuevo diagrama
-    let camY = 100;
-    let camZ = 1100;
-    if (idx === 3) {
-        camY = -10;
-        camZ = 2050;
-    } else if (idx === 0) {
-        camY = 0;
-        camZ = 2700;
-    }
-    flyCameraTo(0, camY, camZ);
+    const cam = getCameraPreset(idx);
+    flyCameraTo(cam.x, cam.y, cam.z);
 
     showToast(`Pestaña activa: ${workspace.name}`);
 }
@@ -523,7 +523,9 @@ function drawDbTable(ctx, tableData, w, h) {
 function generateShapeCanvas(tableData) {
     const box = tableData.shape === "dbtable"
         ? measureDbTable(tableData)
-        : (tableData.box || { w: 220, h: 86 });
+        : tableData.shape === "flow"
+            ? { w: tableData.box.w * FLOW_S, h: tableData.box.h * FLOW_S }
+            : (tableData.box || { w: 220, h: 86 });
     const width = box.w;
     const height = box.h;
     const texture = makeCanvasTexture(width, height, (ctx, w, h) => {
@@ -605,6 +607,8 @@ function generateShapeCanvas(tableData) {
             ctx.fillText("BD", cx, (top + bottom) / 2 + 4);
         } else if (tableData.shape === "dbtable") {
             drawDbTable(ctx, tableData, w, h);
+        } else if (tableData.shape === "flow") {
+            drawFlowNode(ctx, w, h, tableData);
         }
     });
     return { texture, width, height };
@@ -733,6 +737,213 @@ function createShapeMesh(tableData) {
 
     scene.add(mesh);
     tableMeshes[tableData.id] = mesh;
+}
+
+// -----------------------------------------------------------------------------
+// 3c. DIAGRAMA DE FLUJO (NODOS Y FLECHAS EN 3D, COORDENADAS DE LA LÁMINA)
+// -----------------------------------------------------------------------------
+const FLOW_S = 1.2;      // escala de píxeles de la lámina a unidades 3D
+const FLOW_DASH = 12;    // largo de cada trazo punteado
+const FLOW_GAP = 8;      // separación entre trazos punteados
+const FLOW_LINE_R = 1.8; // grosor de las líneas
+const FLOW_UP = new THREE.Vector3(0, 1, 0);
+
+function flowX(px) { return (px - 387) * FLOW_S; }
+function flowY(py) { return (512 - py) * FLOW_S; }
+
+function getCameraPreset(idx) {
+    if (idx === 3) return { x: 0, y: -10, z: 2050 };
+    if (idx === 0) return { x: 0, y: 0, z: 2700 };
+    if (idx === 4) return { x: 0, y: 0, z: 1800 };
+    return { x: 0, y: 100, z: 1100 };
+}
+
+function drawFlowIcon(ctx, icon, x, y, px) {
+    ctx.font = `${px}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(icon, x, y);
+}
+
+function drawFlowNode(ctx, w, h, t) {
+    const S = FLOW_S;
+    const isDecision = t.kind === "decision";
+    const isTerminator = t.kind === "terminator";
+
+    ctx.save();
+    ctx.shadowColor = "rgba(30, 50, 90, 0.18)";
+    ctx.shadowBlur = 6 * S;
+    ctx.shadowOffsetY = 2 * S;
+    ctx.fillStyle = t.fill;
+    ctx.strokeStyle = t.border;
+    ctx.lineWidth = 2.5 * S;
+    ctx.beginPath();
+    if (isDecision) {
+        ctx.moveTo(w / 2, 2);
+        ctx.lineTo(w - 2, h / 2);
+        ctx.lineTo(w / 2, h - 2);
+        ctx.lineTo(2, h / 2);
+        ctx.closePath();
+    } else if (isTerminator) {
+        ctx.roundRect(2, 2, w - 4, h - 4, (h - 4) / 2);
+    } else {
+        ctx.roundRect(2, 2, w - 4, h - 4, 10 * S);
+    }
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.stroke();
+    ctx.restore();
+
+    const color = t.textColor || "#1D2B3A";
+    const weight = t.bold ? "700" : "600";
+    const lines = t.labelLines || [t.name];
+
+    if (isTerminator) {
+        drawCenteredLines(ctx, lines, w / 2, h / 2, `700 ${18 * S}px system-ui, Segoe UI, sans-serif`, color, 20 * S);
+        return;
+    }
+
+    if (isDecision) {
+        if (t.icon) drawFlowIcon(ctx, t.icon, w / 2, h * 0.27, 20 * S);
+        drawCenteredLines(ctx, lines, w / 2, h * 0.62, `${weight} ${15 * S}px system-ui, Segoe UI, sans-serif`, color, 17 * S);
+        return;
+    }
+
+    if (t.iconPos === "top") {
+        if (t.icon) drawFlowIcon(ctx, t.icon, w / 2, h * 0.3, 26 * S);
+        drawCenteredLines(ctx, lines, w / 2, h * 0.7, `${weight} ${15 * S}px system-ui, Segoe UI, sans-serif`, color, 19 * S);
+        return;
+    }
+
+    const textCx = t.icon ? w / 2 + 16 * S : w / 2;
+    if (t.icon) drawFlowIcon(ctx, t.icon, 30 * S, h / 2, 22 * S);
+    drawCenteredLines(ctx, lines, textCx, h / 2, `${weight} ${15 * S}px system-ui, Segoe UI, sans-serif`, color, 19 * S);
+}
+
+function flowAnchor(mesh, side) {
+    const hw = (mesh.userData.cardWidth || 100) / 2;
+    const hh = (mesh.userData.cardHeight || 60) / 2;
+    const c = mesh.position;
+    if (side === "top") return new THREE.Vector3(c.x, c.y + hh, -2);
+    if (side === "bottom") return new THREE.Vector3(c.x, c.y - hh, -2);
+    if (side === "left") return new THREE.Vector3(c.x - hw, c.y, -2);
+    return new THREE.Vector3(c.x + hw, c.y, -2);
+}
+
+function addFlowSegment(group, a, b, mat, r) {
+    const dir = new THREE.Vector3().subVectors(b, a);
+    const len = dir.length();
+    if (len < 0.01) return;
+    dir.normalize();
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 6, 1), mat);
+    m.position.copy(a).addScaledVector(dir, len / 2);
+    m.quaternion.setFromUnitVectors(FLOW_UP, dir);
+    group.add(m);
+}
+
+function addFlowArrow(group, tip, dir, mat) {
+    const h = 14;
+    const r = 5;
+    const m = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), mat);
+    m.position.copy(tip).addScaledVector(dir, -h / 2);
+    m.quaternion.setFromUnitVectors(FLOW_UP, dir);
+    group.add(m);
+}
+
+function buildFlowEdgeGroup(rel, fromMesh, toMesh) {
+    const pts = [flowAnchor(fromMesh, rel.fromSide)];
+    (rel.via || []).forEach(p => pts.push(new THREE.Vector3(flowX(p[0]), flowY(p[1]), -2)));
+    pts.push(flowAnchor(toMesh, rel.toSide));
+
+    const group = new THREE.Group();
+    const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(rel.color) });
+
+    for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i];
+        const b = pts[i + 1];
+        if (!rel.dashed) {
+            addFlowSegment(group, a, b, mat, FLOW_LINE_R);
+            continue;
+        }
+        const dir = new THREE.Vector3().subVectors(b, a);
+        const len = dir.length();
+        if (len < 0.01) continue;
+        dir.normalize();
+        for (let d = 0; d < len; d += FLOW_DASH + FLOW_GAP) {
+            const e = Math.min(d + FLOW_DASH, len);
+            addFlowSegment(group, a.clone().addScaledVector(dir, d), a.clone().addScaledVector(dir, e), mat, FLOW_LINE_R);
+        }
+    }
+
+    if (!rel.dashed) {
+        for (let i = 1; i < pts.length - 1; i++) {
+            const j = new THREE.Mesh(new THREE.SphereGeometry(FLOW_LINE_R, 6, 6), mat);
+            j.position.copy(pts[i]);
+            group.add(j);
+        }
+    }
+
+    if (rel.arrow !== false) {
+        const last = pts[pts.length - 1];
+        const prev = pts[pts.length - 2];
+        if (last.distanceTo(prev) > 0.01) {
+            const dir = new THREE.Vector3().subVectors(last, prev).normalize();
+            addFlowArrow(group, last, dir, mat);
+        }
+    }
+    return group;
+}
+
+function disposeGroup(group) {
+    if (!group) return;
+    group.traverse(obj => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) obj.material.dispose();
+    });
+    scene.remove(group);
+}
+
+function createFlowEdges(data) {
+    data.relations.forEach(rel => {
+        const fromMesh = tableMeshes[rel.fromTable];
+        const toMesh = tableMeshes[rel.toTable];
+        if (!fromMesh || !toMesh) return;
+        const group = buildFlowEdgeGroup(rel, fromMesh, toMesh);
+        scene.add(group);
+        relationObjects.push({
+            id: rel.id,
+            meta: rel,
+            curve: null,
+            mesh: group,
+            badge: null,
+            fromId: rel.fromTable,
+            toId: rel.toTable,
+            flow: true
+        });
+    });
+
+    (data.info.labels || []).forEach(lb => {
+        const worldW = lb.text.length * 11 + 24;
+        const plane = makeTextPlane(lb.text, worldW, 30, {
+            fontPx: 17,
+            color: lb.color || "#1F3A68",
+            bold: true,
+            align: "center"
+        });
+        plane.position.set(flowX(lb.x), flowY(lb.y), 2);
+        scene.add(plane);
+        useCaseExtras.push(plane);
+    });
+}
+
+function rebuildFlowEdge(relObj) {
+    const fromMesh = tableMeshes[relObj.fromId];
+    const toMesh = tableMeshes[relObj.toId];
+    if (!fromMesh || !toMesh) return;
+    const group = buildFlowEdgeGroup(relObj.meta, fromMesh, toMesh);
+    disposeGroup(relObj.mesh);
+    scene.add(group);
+    relObj.mesh = group;
 }
 
 function clearUseCaseExtras() {
@@ -933,6 +1144,10 @@ function addConnectionPorts(mesh, height) {
 }
 
 function getTablePosition(tableData, layout) {
+    if (tableData.flowPx) {
+        const p = tableData.posOriginal;
+        return { x: flowX(p.x), y: flowY(p.y), z: 0 };
+    }
     if (layout === "layered" && tableData.posLayered) return tableData.posLayered;
     if (layout === "orbital" && tableData.posOrbital) return tableData.posOrbital;
     return tableData.posOriginal || { x: 0, y: 0, z: 0 };
@@ -1163,6 +1378,10 @@ function createRelationBadge(rel, mode) {
 // -----------------------------------------------------------------------------
 function updateRelationshipGeometries() {
     relationObjects.forEach(relObj => {
+        if (relObj.flow) {
+            rebuildFlowEdge(relObj);
+            return;
+        }
         const fromMesh = tableMeshes[relObj.fromId];
         const toMesh = tableMeshes[relObj.toId];
         if (!fromMesh || !toMesh) return;
@@ -1416,7 +1635,7 @@ function setupUIControls() {
             showToast("Vista frontal del esquema");
             return;
         }
-        flyCameraTo(0, 0, 1400);
+        flyCameraTo(0, 0, currentWorkspaceIdx === 4 ? 1800 : 1400);
         showToast("Vista Frontal Plana");
     });
 
@@ -1437,7 +1656,9 @@ function setupUIControls() {
         if (currentWorkspaceIdx === 3) {
             flyCameraTo(0, -10, 2050);
         } else if (currentWorkspaceIdx === 0) {
-            flyCameraTo(40, 0, 2700);
+            flyCameraTo(0, 0, 2700);
+        } else if (currentWorkspaceIdx === 4) {
+            flyCameraTo(0, 0, 1800);
         } else {
             flyCameraTo(0, 120, 1300);
             controls.target.set(0, 0, 0);
